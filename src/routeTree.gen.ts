@@ -9,8 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ScheduleRouteImport } from './routes/schedule'
+import { Route as EmployeeCardRouteImport } from './routes/employeeCard'
+import { Route as AvatarRouteImport } from './routes/avatar'
 import { Route as IndexRouteImport } from './routes/index'
 
+const ScheduleRoute = ScheduleRouteImport.update({
+  id: '/schedule',
+  path: '/schedule',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmployeeCardRoute = EmployeeCardRouteImport.update({
+  id: '/employeeCard',
+  path: '/employeeCard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AvatarRoute = AvatarRouteImport.update({
+  id: '/avatar',
+  path: '/avatar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +37,61 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/avatar': typeof AvatarRoute
+  '/employeeCard': typeof EmployeeCardRoute
+  '/schedule': typeof ScheduleRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/avatar': typeof AvatarRoute
+  '/employeeCard': typeof EmployeeCardRoute
+  '/schedule': typeof ScheduleRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/avatar': typeof AvatarRoute
+  '/employeeCard': typeof EmployeeCardRoute
+  '/schedule': typeof ScheduleRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/avatar' | '/employeeCard' | '/schedule'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/avatar' | '/employeeCard' | '/schedule'
+  id: '__root__' | '/' | '/avatar' | '/employeeCard' | '/schedule'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AvatarRoute: typeof AvatarRoute
+  EmployeeCardRoute: typeof EmployeeCardRoute
+  ScheduleRoute: typeof ScheduleRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/schedule': {
+      id: '/schedule'
+      path: '/schedule'
+      fullPath: '/schedule'
+      preLoaderRoute: typeof ScheduleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/employeeCard': {
+      id: '/employeeCard'
+      path: '/employeeCard'
+      fullPath: '/employeeCard'
+      preLoaderRoute: typeof EmployeeCardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/avatar': {
+      id: '/avatar'
+      path: '/avatar'
+      fullPath: '/avatar'
+      preLoaderRoute: typeof AvatarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +104,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AvatarRoute: AvatarRoute,
+  EmployeeCardRoute: EmployeeCardRoute,
+  ScheduleRoute: ScheduleRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

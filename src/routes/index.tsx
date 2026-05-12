@@ -1,266 +1,147 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { useSchedule } from "@/hooks/use-schedule";
-import {
-  startOfISOWeek,
-  addDays,
-  getISOWeek,
-  formatDateKey,
-  pad2,
-  DAY_NAMES,
-} from "@/lib/date-utils";
-import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { EmployeeManagerModal } from "@/components/schedule/EmployeeManagerModal";
-import { ShiftManagerModal } from "@/components/schedule/ShiftManagerModal";
-import { ShiftPickerModal } from "@/components/schedule/ShiftPickerModal";
-import { ChevronLeft, ChevronRight, Users, Clock, Trash2, CalendarDays } from "lucide-react";
+import React from 'react';
+import { Link, createFileRoute } from '@tanstack/react-router';
 
-export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Lịch làm việc" },
-      { name: "description", content: "Quản lý lịch làm việc nhân viên theo tuần" },
-    ],
-  }),
-  component: SchedulePage,
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+
+import {
+    Users,
+    CalendarDays,
+    UserCog,
+    Image,
+    BarChart3,
+} from 'lucide-react';
+
+export const Route = createFileRoute('/')({
+    head: () => ({
+        meta: [
+            { title: 'Admin Dashboard' },
+            {
+                name: 'description',
+                content: 'Hệ thống quản trị',
+            },
+        ],
+    }),
+    component: AdminDashboard,
 });
 
-function SchedulePage() {
-  const {
-    state,
-    hydrated,
-    addEmployee,
-    updateEmployee,
-    deleteEmployee,
-    addShift,
-    updateShift,
-    deleteShift,
-    setAssignment,
-    clearWeek,
-  } = useSchedule();
+function AdminDashboard() {
+    const adminMenuItems = [
+        {
+            title: 'Lịch Làm Việc',
+            description: 'Quản lý ca làm và phân lịch cho nhân viên',
+            icon: CalendarDays,
+            link: '/schedule',
+            color: 'bg-blue-500',
+        },
+        {
+            title: 'Nhân Viên',
+            description: 'Quản lý thông tin nhân viên và thẻ nhân viên',
+            icon: Users,
+            link: '/admin/employees',
+            color: 'bg-emerald-500',
+        },
+        {
+            title: 'Thẻ Nhân Viên',
+            description: 'Thiết kế và quản lý thẻ nhân viên',
+            icon: UserCog,
+            link: '/employeeCard',
+            color: 'bg-amber-500',
+        },
+        {
+            title: 'Avatar & Hình ảnh',
+            description: 'Quản lý avatar và hình ảnh nhân viên',
+            icon: Image,
+            link: '/avatar',
+            color: 'bg-purple-500',
+        },
+    ];
 
-  // real-time "today" — refreshes if user keeps the tab open across midnight
-  const [today, setToday] = useState<Date>(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setToday(new Date()), 60_000);
-    return () => clearInterval(id);
-  }, []);
+    return (
+        <div className="min-h-screen bg-background">
+            {/* Header */}
+            <header className="border-b bg-card">
+                <div className="container mx-auto px-4 py-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-3xl font-bold text-foreground">
+                                Admin Dashboard
+                            </h1>
 
-  const [weekOffset, setWeekOffset] = useState(0);
-  const weekStart = useMemo(() => addDays(startOfISOWeek(today), weekOffset * 7), [today, weekOffset]);
-  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
-  const dayKeys = useMemo(() => days.map(formatDateKey), [days]);
-  const { week, year } = getISOWeek(weekStart);
-  const todayKey = formatDateKey(today);
-
-  const [empOpen, setEmpOpen] = useState(false);
-  const [shiftOpen, setShiftOpen] = useState(false);
-  const [picker, setPicker] = useState<{ empId: string; dateKey: string } | null>(null);
-  const [confirmClear, setConfirmClear] = useState(false);
-
-  if (!hydrated) {
-    return <div className="min-h-screen bg-background" />;
-  }
-
-  const pickerEmp = picker ? state.employees.find((e) => e.id === picker.empId) : null;
-  const pickerDay = picker ? days[dayKeys.indexOf(picker.dateKey)] : null;
-  const pickerCurrent = picker ? state.assignments[`${picker.empId}|${picker.dateKey}`] ?? null : null;
-
-  const subtitle = `Tuần từ ${pad2(days[0].getDate())}/${pad2(days[0].getMonth() + 1)} – ${pad2(days[6].getDate())}/${pad2(days[6].getMonth() + 1)} · Nhấn vào ô để chỉnh sửa`;
-
-  return (
-    <div className="min-h-screen bg-muted/30 px-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-end justify-between flex-wrap gap-3 mb-6">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
-              <CalendarDays className="w-7 h-7" /> Lịch Làm Việc
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="outline" size="sm" onClick={() => setEmpOpen(true)}>
-              <Users className="w-4 h-4 mr-1" /> Nhân viên
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setShiftOpen(true)}>
-              <Clock className="w-4 h-4 mr-1" /> Ca làm
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setConfirmClear(true)}>
-              <Trash2 className="w-4 h-4 mr-1" /> Xóa tuần
-            </Button>
-            <div className="flex items-center gap-1 bg-card border border-border rounded-full p-1">
-              <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => setWeekOffset((o) => o - 1)}>
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <button
-                onClick={() => setWeekOffset(0)}
-                className="text-xs font-semibold px-2 hover:text-primary"
-              >
-                Hôm nay
-              </button>
-              <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => setWeekOffset((o) => o + 1)}>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="bg-foreground text-background text-xs font-semibold px-3 py-1.5 rounded-full">
-              Tuần {week} · {year}
-            </div>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th className="bg-foreground text-background text-xs font-semibold p-3 text-left pl-5 min-w-[140px] border-r border-border/20">
-                    Nhân viên
-                  </th>
-                  {days.map((d, i) => {
-                    const isWeekend = i >= 5;
-                    const isToday = formatDateKey(d) === todayKey;
-                    return (
-                      <th
-                        key={i}
-                        className={`text-xs font-semibold p-3 text-center border-r border-border/20 last:border-r-0 ${
-                          isWeekend ? "bg-stone-800 text-orange-300" : "bg-foreground text-background"
-                        }`}
-                      >
-                        <div className={`text-[13px] font-bold ${isToday ? "underline underline-offset-4" : ""}`}>{DAY_NAMES[i]}</div>
-                        <div className="text-lg font-bold opacity-90 mt-0.5">{pad2(d.getDate())}/{pad2(d.getMonth() + 1)}</div>
-                      </th>
-                    );
-                  })}
-                </tr>
-              </thead>
-              <tbody>
-                {state.employees.map((emp) => (
-                  <tr key={emp.id} className="border-b border-border last:border-b-0">
-                    <td className="text-left py-3 px-5 border-r border-border">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: emp.color }} />
-                        <div className="min-w-0">
-                          <div className="font-semibold text-sm truncate">{emp.name}</div>
-                          {emp.role && (
-                            <div className="text-[11px] text-muted-foreground truncate">{emp.role}</div>
-                          )}
+                            <p className="text-muted-foreground">
+                                Hệ thống quản trị
+                            </p>
                         </div>
-                      </div>
-                    </td>
-                    {dayKeys.map((dk, i) => {
-                      const isWeekend = i >= 5;
-                      const shiftId = state.assignments[`${emp.id}|${dk}`];
-                      const shift = shiftId ? state.shifts.find((s) => s.id === shiftId) : null;
-                      return (
-                        <td
-                          key={dk}
-                          className={`text-center p-2 border-r border-border last:border-r-0 ${isWeekend ? "bg-orange-50/40" : ""}`}
-                        >
-                          {shift ? (
-                            <button
-                              onClick={() => setPicker({ empId: emp.id, dateKey: dk })}
-                              className="inline-block rounded-lg px-2.5 py-1.5 min-w-[88px] transition-all hover:scale-105 hover:shadow-md"
-                              style={{ background: shift.bg, color: shift.fg }}
+
+                        <Link to="/">
+                            <Button variant="outline">
+                                <Users className="mr-2 h-4 w-4" />
+                                Về trang chính
+                            </Button>
+                        </Link>
+                    </div>
+                </div>
+            </header>
+
+            {/* Main Content */}
+            <main className="container mx-auto px-4 py-10">
+                <div className="mb-8">
+                    <h2 className="mb-2 text-2xl font-semibold">
+                        Chào mừng quay trở lại!
+                    </h2>
+
+                    <p className="text-muted-foreground">
+                        Chọn chức năng bạn muốn quản lý
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {adminMenuItems.map((item, index) => {
+                        const IconComponent = item.icon;
+
+                        return (
+                            <Card
+                                key={index}
+                                className="group transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                             >
-                              <div className="text-[11px] font-bold uppercase tracking-wide">{shift.code}</div>
-                              <div className="text-[10px] font-medium opacity-80 mt-0.5">{shift.start}–{shift.end}</div>
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => setPicker({ empId: emp.id, dateKey: dk })}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-md border-[1.5px] border-dashed border-border text-muted-foreground hover:border-muted-foreground hover:bg-muted/50 transition-colors"
-                            >
-                              +
-                            </button>
-                          )}
-                        </td>
-                      );
+                                <CardHeader className="pb-4">
+                                    <div className="flex items-center space-x-4">
+                                        <div
+                                            className={`rounded-xl p-3 transition-transform group-hover:scale-110 ${item.color}`}
+                                        >
+                                            <IconComponent className="h-7 w-7 text-white" />
+                                        </div>
+
+                                        <CardTitle className="text-xl">
+                                            {item.title}
+                                        </CardTitle>
+                                    </div>
+                                </CardHeader>
+
+                                <CardContent>
+                                    <p className="mb-6 leading-relaxed text-muted-foreground">
+                                        {item.description}
+                                    </p>
+
+                                    <Link to={item.link}>
+                                        <Button className="w-full" size="lg">
+                                            Truy cập ngay
+                                        </Button>
+                                    </Link>
+                                </CardContent>
+                            </Card>
+                        );
                     })}
-                  </tr>
-                ))}
-                {state.employees.length === 0 && (
-                  <tr>
-                    <td colSpan={8} className="text-center py-10 text-sm text-muted-foreground">
-                      Chưa có nhân viên. Bấm "Nhân viên" để thêm.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                </div>
+
+                {/* Info Box */}
+                <div className="mt-12 rounded-2xl border bg-card p-6 text-center">
+                    <p className="text-sm text-muted-foreground">
+                        Hệ thống đang trong giai đoạn phát triển. Các tính năng Schedule và
+                        Quản lý Nhân viên đang được ưu tiên.
+                    </p>
+                </div>
+            </main>
         </div>
-
-        {/* Legend */}
-        <div className="mt-4 flex flex-wrap gap-2 items-center">
-          <span className="text-xs font-semibold text-muted-foreground mr-1">Ca:</span>
-          {state.shifts.map((s) => (
-            <span
-              key={s.id}
-              className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-border bg-card"
-            >
-              <span className="w-2 h-2 rounded-full" style={{ background: s.bg, borderColor: s.fg }} />
-              <span className="font-semibold" style={{ color: s.fg }}>{s.code}</span>
-              <span className="text-muted-foreground">{s.start}–{s.end}</span>
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Modals */}
-      <EmployeeManagerModal
-        open={empOpen}
-        onOpenChange={setEmpOpen}
-        employees={state.employees}
-        onAdd={addEmployee}
-        onUpdate={updateEmployee}
-        onDelete={deleteEmployee}
-      />
-      <ShiftManagerModal
-        open={shiftOpen}
-        onOpenChange={setShiftOpen}
-        shifts={state.shifts}
-        onAdd={addShift}
-        onUpdate={updateShift}
-        onDelete={deleteShift}
-      />
-      <ShiftPickerModal
-        open={!!picker}
-        onOpenChange={(v) => !v && setPicker(null)}
-        shifts={state.shifts}
-        currentShiftId={pickerCurrent}
-        employeeName={pickerEmp?.name}
-        dateLabel={pickerDay ? `${DAY_NAMES[dayKeys.indexOf(picker!.dateKey)]} ${pad2(pickerDay.getDate())}/${pad2(pickerDay.getMonth() + 1)}` : undefined}
-        onSelect={(shiftId) => {
-          if (picker) setAssignment(picker.empId, picker.dateKey, shiftId);
-        }}
-      />
-
-      <AlertDialog open={confirmClear} onOpenChange={setConfirmClear}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Xóa tất cả ca trong tuần?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Toàn bộ phân ca của tuần {week}/{year} sẽ bị xóa. Hành động này không thể hoàn tác.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Hủy</AlertDialogCancel>
-            <AlertDialogAction onClick={() => clearWeek(dayKeys)}>Xóa</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  );
+    );
 }
