@@ -2,7 +2,19 @@ export type Employee = {
   id: string;
   name: string;
   color: string; // hex
+  role?: string; // chức vụ
 };
+
+export const ROLE_PRESETS = [
+  "Quản lý",
+  "Trưởng ca",
+  "Nhân viên",
+  "Thu ngân",
+  "Phục vụ",
+  "Bếp",
+  "Pha chế",
+  "Bảo vệ",
+] as const;
 
 export type ShiftGroup = "sang" | "chieu" | "toi";
 
