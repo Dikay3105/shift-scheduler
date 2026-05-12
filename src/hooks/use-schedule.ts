@@ -4,10 +4,10 @@ import type { ScheduleState, Employee, Shift, Assignments } from "@/lib/schedule
 const STORAGE_KEY = "schedule-v1";
 
 const DEFAULT_EMPLOYEES: Employee[] = [
-  { id: "e1", name: "Nguyễn Văn A", color: "#db2777" },
-  { id: "e2", name: "Trần Thị B", color: "#0369a1" },
-  { id: "e3", name: "Lê Văn C", color: "#059669" },
-  { id: "e4", name: "Phạm Thị D", color: "#b45309" },
+  { id: "e1", name: "Nguyễn Văn A", color: "#db2777", role: "Quản lý" },
+  { id: "e2", name: "Trần Thị B", color: "#0369a1", role: "Thu ngân" },
+  { id: "e3", name: "Lê Văn C", color: "#059669", role: "Phục vụ" },
+  { id: "e4", name: "Phạm Thị D", color: "#b45309", role: "Bếp" },
 ];
 
 const DEFAULT_SHIFTS: Shift[] = [
