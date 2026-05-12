@@ -56,10 +56,10 @@ export function useSchedule() {
   }, [state, hydrated]);
 
   // Employees
-  const addEmployee = useCallback((name: string, color: string) => {
+  const addEmployee = useCallback((name: string, color: string, role?: string) => {
     setState((s) => ({
       ...s,
-      employees: [...s.employees, { id: `e_${Date.now()}`, name, color }],
+      employees: [...s.employees, { id: `e_${Date.now()}`, name, color, role }],
     }));
   }, []);
   const updateEmployee = useCallback((id: string, patch: Partial<Employee>) => {
