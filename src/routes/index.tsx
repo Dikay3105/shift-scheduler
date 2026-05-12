@@ -149,10 +149,15 @@ function SchedulePage() {
                 {state.employees.map((emp) => (
                   <tr key={emp.id} className="border-b border-border last:border-b-0">
                     <td className="text-left py-3 px-5 border-r border-border">
-                      <span className="inline-flex items-center gap-2 font-semibold text-sm">
-                        <span className="w-2 h-2 rounded-full" style={{ background: emp.color }} />
-                        {emp.name}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: emp.color }} />
+                        <div className="min-w-0">
+                          <div className="font-semibold text-sm truncate">{emp.name}</div>
+                          {emp.role && (
+                            <div className="text-[11px] text-muted-foreground truncate">{emp.role}</div>
+                          )}
+                        </div>
+                      </div>
                     </td>
                     {dayKeys.map((dk, i) => {
                       const isWeekend = i >= 5;
