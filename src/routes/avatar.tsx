@@ -528,37 +528,37 @@ function AvatarGeneratorPage() {
             />
 
             {/* CONTENT */}
-            <div className="h-[calc(100vh-80px)] overflow-hidden bg-[linear-gradient(135deg,#f8f1e9,#f4e9d8)] pb-5">
-                <div className="container mx-auto h-full px-4 pt-5 pb-6">
-                    <div className="grid h-full gap-8 lg:grid-cols-[420px_1fr]">
+            <div className="bg-[linear-gradient(135deg,#f8f1e9,#f4e9d8)] pb-5">
+                <div className="container mx-auto px-4 pt-4 pb-4">
+                    <div className="grid items-stretch gap-6 lg:grid-cols-[380px_1fr]">
                         {/* LEFT PANEL */}
-                        <div className="flex h-full flex-col rounded-3xl bg-white p-6 pb-8 shadow-2xl">
-                            <div className="mb-6">
-                                <h2 className="text-2xl font-bold">
+                        <div className="flex flex-col rounded-3xl bg-white p-5 shadow-2xl">
+                            <div className="mb-4">
+                                <h2 className="text-xl font-bold">
                                     Thông tin nhân viên
                                 </h2>
 
-                                <p className="mt-1 text-sm text-muted-foreground">
+                                <p className="mt-0.5 text-xs text-muted-foreground">
                                     Tạo avatar và khung nhân viên
                                 </p>
                             </div>
 
                             {/* Upload */}
-                            <div className="mb-6">
-                                <label className="mb-2 block font-medium">
+                            <div className="mb-4">
+                                <label className="mb-2 block text-sm font-medium">
                                     Ảnh đại diện
                                 </label>
 
-                                <label className="block cursor-pointer rounded-3xl border-2 border-dashed border-[#c5b8a5] p-10 text-center transition-all duration-300 hover:scale-[1.01] hover:bg-[#f8f1e9]">
-                                    <div className="mb-3 text-5xl">☁️</div>
-
-                                    <p className="font-semibold">
-                                        Kéo thả ảnh vào đây
-                                    </p>
-
-                                    <p className="mt-1 text-sm text-muted-foreground">
-                                        hoặc nhấn để chọn ảnh
-                                    </p>
+                                <label className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-dashed border-[#c5b8a5] p-3 text-left transition-all duration-300 hover:bg-[#f8f1e9]">
+                                    <div className="text-2xl">☁️</div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-semibold">
+                                            Kéo thả ảnh vào đây
+                                        </p>
+                                        <p className="truncate text-xs text-muted-foreground">
+                                            hoặc nhấn để chọn ảnh
+                                        </p>
+                                    </div>
 
                                     <input
                                         type="file"
@@ -607,17 +607,17 @@ function AvatarGeneratorPage() {
                             </div>
 
                             {/* Buttons */}
-                            <div className="mt-auto grid gap-3 pt-6">
+                            <div className="mt-auto grid gap-2 pt-4">
                                 <button
                                     onClick={gen}
-                                    className="rounded-2xl bg-[#5B7B8C] px-5 py-3 text-lg font-medium text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:opacity-90"
+                                    className="rounded-2xl bg-[#5B7B8C] px-4 py-2.5 text-sm font-medium text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:opacity-90"
                                 >
                                     ✨ Tạo Avatar
                                 </button>
 
                                 <button
                                     onClick={dl}
-                                    className="rounded-2xl bg-green-600 px-5 py-3 text-lg font-medium text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-green-700"
+                                    className="rounded-2xl bg-green-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-green-700"
                                 >
                                     ⬇️ Tải PNG (800×800)
                                 </button>
@@ -625,24 +625,24 @@ function AvatarGeneratorPage() {
                         </div>
 
                         {/* RIGHT PANEL */}
-                        <div className="flex h-full flex-col rounded-3xl bg-white p-6 shadow-2xl">
-                            <div className="mb-5 text-center">
-                                <h2 className="text-3xl font-bold">
+                        <div className="flex flex-col rounded-3xl bg-white p-5 shadow-2xl">
+                            <div className="mb-3 text-center">
+                                <h2 className="text-2xl font-bold">
                                     Xem trước
                                 </h2>
 
-                                <div className="mt-3 inline-block rounded-full bg-muted px-4 py-1 text-sm">
+                                <div className="mt-2 inline-block rounded-full bg-muted px-3 py-0.5 text-xs">
                                     800 × 800
                                 </div>
                             </div>
 
                             {/* Canvas Container */}
-                            <div className="flex flex-1 items-center justify-center rounded-3xl bg-[#f8f4eb] p-5">
+                            <div className="flex flex-1 items-center justify-center rounded-3xl bg-[#f8f4eb] p-4">
                                 <canvas
                                     ref={canvasRef}
                                     width={800}
                                     height={800}
-                                    className="aspect-square w-full max-w-[min(500px,65vh)] rounded-2xl border border-[#e0d9cc] bg-white shadow-2xl"
+                                    className="aspect-square w-full max-w-[min(420px,55vh)] rounded-2xl border border-[#e0d9cc] bg-white shadow-2xl"
                                 />
                             </div>
                         </div>
