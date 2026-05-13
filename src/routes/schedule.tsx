@@ -96,6 +96,41 @@ function SchedulePage() {
 
   const [confirmClear, setConfirmClear] = useState(false);
 
+  const [searchInput, setSearchInput] = useState("");
+  const [searchError, setSearchError] = useState<string | null>(null);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const raw = searchInput.trim();
+    if (!raw) return;
+    // Accept DD/MM or DD/MM/YYYY (also accept '-' as separator)
+    const m = raw.match(/^(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?$/);
+    if (!m) {
+      setSearchError("Định dạng: DD/MM hoặc DD/MM/YYYY");
+      return;
+    }
+    const day = parseInt(m[1], 10);
+    const month = parseInt(m[2], 10);
+    let year = m[3] ? parseInt(m[3], 10) : today.getFullYear();
+    if (year < 100) year += 2000;
+    if (month < 1 || month > 12 || day < 1 || day > 31) {
+      setSearchError("Ngày hoặc tháng không hợp lệ");
+      return;
+    }
+    const target = new Date(year, month - 1, day);
+    if (target.getMonth() !== month - 1 || target.getDate() !== day) {
+      setSearchError("Ngày không tồn tại");
+      return;
+    }
+    const todayWeekStart = startOfISOWeek(today);
+    const targetWeekStart = startOfISOWeek(target);
+    const diffWeeks = Math.round(
+      (targetWeekStart.getTime() - todayWeekStart.getTime()) / (7 * 86400000)
+    );
+    setWeekOffset(diffWeeks);
+    setSearchError(null);
+  };
+
   if (!hydrated) {
     return <div className="min-h-screen bg-background" />;
   }
