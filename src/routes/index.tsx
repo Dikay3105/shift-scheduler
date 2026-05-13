@@ -10,7 +10,7 @@ import {
     Image,
     ArrowRight,
 } from "lucide-react";
-import AdminHeader from "@/components/adminHeader";
+import AdminHeader from "@/components/AdminHeader";
 
 export const Route = createFileRoute("/")({
     component: AdminDashboard,

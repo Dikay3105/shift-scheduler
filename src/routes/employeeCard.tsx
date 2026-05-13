@@ -1,4 +1,4 @@
-import AdminHeader from "@/components/adminHeader";
+import AdminHeader from "@/components/AdminHeader";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import QRCode from "react-qr-code";

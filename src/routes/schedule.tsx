@@ -34,8 +34,10 @@ import {
   Clock,
   Trash2,
   CalendarDays,
+  Search,
 } from "lucide-react";
-import AdminHeader from "@/components/adminHeader";
+import { Input } from "@/components/ui/input";
+import AdminHeader from "@/components/AdminHeader";
 
 export const Route = createFileRoute("/schedule")({
   component: SchedulePage,
@@ -94,6 +96,41 @@ function SchedulePage() {
 
   const [confirmClear, setConfirmClear] = useState(false);
 
+  const [searchInput, setSearchInput] = useState("");
+  const [searchError, setSearchError] = useState<string | null>(null);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const raw = searchInput.trim();
+    if (!raw) return;
+    // Accept DD/MM or DD/MM/YYYY (also accept '-' as separator)
+    const m = raw.match(/^(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?$/);
+    if (!m) {
+      setSearchError("Định dạng: DD/MM hoặc DD/MM/YYYY");
+      return;
+    }
+    const day = parseInt(m[1], 10);
+    const month = parseInt(m[2], 10);
+    let year = m[3] ? parseInt(m[3], 10) : today.getFullYear();
+    if (year < 100) year += 2000;
+    if (month < 1 || month > 12 || day < 1 || day > 31) {
+      setSearchError("Ngày hoặc tháng không hợp lệ");
+      return;
+    }
+    const target = new Date(year, month - 1, day);
+    if (target.getMonth() !== month - 1 || target.getDate() !== day) {
+      setSearchError("Ngày không tồn tại");
+      return;
+    }
+    const todayWeekStart = startOfISOWeek(today);
+    const targetWeekStart = startOfISOWeek(target);
+    const diffWeeks = Math.round(
+      (targetWeekStart.getTime() - todayWeekStart.getTime()) / (7 * 86400000)
+    );
+    setWeekOffset(diffWeeks);
+    setSearchError(null);
+  };
+
   if (!hydrated) {
     return <div className="min-h-screen bg-background" />;
   }
@@ -138,6 +175,34 @@ function SchedulePage() {
                 {subtitle}
               </p>
             </div>
+
+            <form
+              onSubmit={handleSearch}
+              className="flex w-full items-start gap-2 sm:w-auto"
+            >
+              <div className="flex flex-col">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={searchInput}
+                    onChange={(e) => {
+                      setSearchInput(e.target.value);
+                      if (searchError) setSearchError(null);
+                    }}
+                    placeholder="DD/MM hoặc DD/MM/YYYY"
+                    className="h-9 w-[220px] pl-8"
+                  />
+                </div>
+                {searchError && (
+                  <span className="mt-1 text-[11px] text-destructive">
+                    {searchError}
+                  </span>
+                )}
+              </div>
+              <Button type="submit" size="sm" variant="default">
+                Tìm tuần
+              </Button>
+            </form>
 
             <div className="flex flex-wrap items-center gap-2">
               <Button
@@ -393,11 +458,9 @@ function SchedulePage() {
         <ShiftManagerModal
           open={shiftOpen}
           onOpenChange={setShiftOpen}
-          shifts={state.shifts}
           onAdd={addShift}
           onUpdate={updateShift}
           onDelete={deleteShift}
-          onRefresh={refresh}
         />
 
         <ShiftPickerModal
