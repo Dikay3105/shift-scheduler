@@ -528,17 +528,17 @@ function AvatarGeneratorPage() {
             />
 
             {/* CONTENT */}
-            <div className="h-[calc(100vh-80px)] overflow-hidden bg-[linear-gradient(135deg,#f8f1e9,#f4e9d8)] pb-5">
-                <div className="container mx-auto h-full px-4 pt-5 pb-6">
-                    <div className="grid h-full gap-8 lg:grid-cols-[420px_1fr]">
+            <div className="bg-[linear-gradient(135deg,#f8f1e9,#f4e9d8)] pb-5">
+                <div className="container mx-auto px-4 pt-4 pb-4">
+                    <div className="grid items-stretch gap-6 lg:grid-cols-[380px_1fr]">
                         {/* LEFT PANEL */}
-                        <div className="flex h-full flex-col rounded-3xl bg-white p-6 pb-8 shadow-2xl">
-                            <div className="mb-6">
-                                <h2 className="text-2xl font-bold">
+                        <div className="flex flex-col rounded-3xl bg-white p-5 shadow-2xl">
+                            <div className="mb-4">
+                                <h2 className="text-xl font-bold">
                                     Thông tin nhân viên
                                 </h2>
 
-                                <p className="mt-1 text-sm text-muted-foreground">
+                                <p className="mt-0.5 text-xs text-muted-foreground">
                                     Tạo avatar và khung nhân viên
                                 </p>
                             </div>
