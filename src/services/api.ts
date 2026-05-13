@@ -1,5 +1,4 @@
-// src/services/api.ts
-const API_BASE = "http://localhost:5000/api";   // ← Thay đổi khi deploy
+const API_BASE = "http://localhost:5000/api";
 
 export const scheduleApi = {
   // ============== EMPLOYEES ==============
@@ -14,6 +13,7 @@ export const scheduleApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+
     return res.json();
   },
 
@@ -23,11 +23,15 @@ export const scheduleApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+
     return res.json();
   },
 
   deleteEmployee: async (id: string) => {
-    const res = await fetch(`${API_BASE}/employees/${id}`, { method: "DELETE" });
+    const res = await fetch(`${API_BASE}/employees/${id}`, {
+      method: "DELETE",
+    });
+
     return res.json();
   },
 
@@ -43,6 +47,7 @@ export const scheduleApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+
     return res.json();
   },
 
@@ -52,31 +57,56 @@ export const scheduleApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+
     return res.json();
   },
 
   deleteShift: async (id: string) => {
-    const res = await fetch(`${API_BASE}/shifts/${id}`, { method: "DELETE" });
+    const res = await fetch(`${API_BASE}/shifts/${id}`, {
+      method: "DELETE",
+    });
+
     return res.json();
   },
 
   // ============== SCHEDULES ==============
-  getSchedules: async (startDate?: string) => {
-    const url = startDate
-      ? `${API_BASE}/schedules?startDate=${startDate}`
-      : `${API_BASE}/schedules`;
-    const res = await fetch(url);
+  getSchedules: async (startDate: string, endDate: string) => {
+    const res = await fetch(
+      `${API_BASE}/schedules?startDate=${startDate}&endDate=${endDate}`
+    );
+
     return res.json();
   },
 
-  createSchedule: async (data: { employee: string; shift: string; date: string }) => {
+  createSchedule: async (data: {
+    employee: string;
+    shift: string;
+    date: string;
+  }) => {
     const res = await fetch(`${API_BASE}/schedules`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+
     return res.json();
   },
 
-  // TODO: Thêm deleteSchedule nếu cần sau này
+  updateSchedule: async (id: string, data: any) => {
+    const res = await fetch(`${API_BASE}/schedules/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    return res.json();
+  },
+
+  deleteSchedule: async (id: string) => {
+    const res = await fetch(`${API_BASE}/schedules/${id}`, {
+      method: "DELETE",
+    });
+
+    return res.json();
+  },
 };

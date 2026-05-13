@@ -1,145 +1,113 @@
-import React from 'react';
-import { Link, createFileRoute } from '@tanstack/react-router';
+import React from "react";
+import { Link, createFileRoute } from "@tanstack/react-router";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from "@/components/ui/card";
 
 import {
     Users,
     CalendarDays,
     UserCog,
     Image,
-    BarChart3,
-} from 'lucide-react';
+    ArrowRight,
+} from "lucide-react";
+import AdminHeader from "@/components/adminHeader";
 
-export const Route = createFileRoute('/')({
-    head: () => ({
-        meta: [
-            { title: 'Admin Dashboard' },
-            {
-                name: 'description',
-                content: 'Hệ thống quản trị',
-            },
-        ],
-    }),
+export const Route = createFileRoute("/")({
     component: AdminDashboard,
 });
 
 function AdminDashboard() {
     const adminMenuItems = [
         {
-            title: 'Lịch Làm Việc',
-            description: 'Quản lý ca làm và phân lịch cho nhân viên',
+            title: "Lịch Làm Việc",
+            description: "Quản lý ca làm và phân lịch cho nhân viên",
             icon: CalendarDays,
-            link: '/schedule',
-            color: 'bg-blue-500',
+            link: "/schedule",
+            gradient: "from-blue-500 to-cyan-500",
         },
         {
-            title: 'Nhân Viên',
-            description: 'Quản lý thông tin nhân viên và thẻ nhân viên',
+            title: "Nhân Viên",
+            description: "Quản lý thông tin nhân viên",
             icon: Users,
-            link: '/admin/employees',
-            color: 'bg-emerald-500',
+            link: "/admin/employees",
+            gradient: "from-emerald-500 to-green-500",
         },
         {
-            title: 'Thẻ Nhân Viên',
-            description: 'Thiết kế và quản lý thẻ nhân viên',
+            title: "Thẻ Nhân Viên",
+            description: "Thiết kế và quản lý thẻ nhân viên",
             icon: UserCog,
-            link: '/employeeCard',
-            color: 'bg-amber-500',
+            link: "/employeeCard",
+            gradient: "from-orange-500 to-amber-500",
         },
         {
-            title: 'Avatar & Hình ảnh',
-            description: 'Quản lý avatar và hình ảnh nhân viên',
+            title: "Avatar & Hình ảnh",
+            description: "Quản lý avatar và hình ảnh",
             icon: Image,
-            link: '/avatar',
-            color: 'bg-purple-500',
+            link: "/avatar",
+            gradient: "from-violet-500 to-purple-500",
         },
     ];
 
     return (
-        <div className="min-h-screen bg-background">
-            {/* Header */}
-            <header className="border-b bg-card">
-                <div className="container mx-auto px-4 py-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-3xl font-bold text-foreground">
-                                Admin Dashboard
-                            </h1>
+        <div className="min-h-screen bg-muted/30">
+            <AdminHeader
+                title="Admin Dashboard"
+                description="Hệ thống quản trị nhân sự"
+            />
 
-                            <p className="text-muted-foreground">
-                                Hệ thống quản trị
-                            </p>
-                        </div>
-
-                        <Link to="/">
-                            <Button variant="outline">
-                                <Users className="mr-2 h-4 w-4" />
-                                Về trang chính
-                            </Button>
-                        </Link>
-                    </div>
-                </div>
-            </header>
-
-            {/* Main Content */}
-            <main className="container mx-auto px-4 py-10">
-                <div className="mb-8">
-                    <h2 className="mb-2 text-2xl font-semibold">
-                        Chào mừng quay trở lại!
+            <main className="mx-auto max-w-7xl px-6 py-10">
+                {/* Hero */}
+                <div className="mb-10 overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-8 text-white shadow-2xl">
+                    <h2 className="mb-3 text-4xl font-bold">
+                        Chào mừng quay trở lại 👋
                     </h2>
 
-                    <p className="text-muted-foreground">
-                        Chọn chức năng bạn muốn quản lý
+                    <p className="max-w-2xl text-slate-300">
+                        Quản lý lịch làm việc, nhân viên và hệ thống nội bộ.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {/* Menu */}
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
                     {adminMenuItems.map((item, index) => {
                         const IconComponent = item.icon;
 
                         return (
-                            <Card
-                                key={index}
-                                className="group transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-                            >
-                                <CardHeader className="pb-4">
-                                    <div className="flex items-center space-x-4">
+                            <Link key={index} to={item.link}>
+                                <Card className="group h-full overflow-hidden border-0 bg-background shadow-md transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
+                                    <CardContent className="p-0">
                                         <div
-                                            className={`rounded-xl p-3 transition-transform group-hover:scale-110 ${item.color}`}
-                                        >
-                                            <IconComponent className="h-7 w-7 text-white" />
+                                            className={`h-2 bg-gradient-to-r ${item.gradient}`}
+                                        />
+
+                                        <div className="p-6">
+                                            <div
+                                                className={`mb-6 inline-flex rounded-2xl bg-gradient-to-r p-4 text-white shadow-lg ${item.gradient}`}
+                                            >
+                                                <IconComponent className="h-7 w-7" />
+                                            </div>
+
+                                            <h4 className="mb-2 text-xl font-semibold">
+                                                {item.title}
+                                            </h4>
+
+                                            <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
+                                                {item.description}
+                                            </p>
+
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm font-medium">
+                                                    Truy cập
+                                                </span>
+
+                                                <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
+                                            </div>
                                         </div>
-
-                                        <CardTitle className="text-xl">
-                                            {item.title}
-                                        </CardTitle>
-                                    </div>
-                                </CardHeader>
-
-                                <CardContent>
-                                    <p className="mb-6 leading-relaxed text-muted-foreground">
-                                        {item.description}
-                                    </p>
-
-                                    <Link to={item.link}>
-                                        <Button className="w-full" size="lg">
-                                            Truy cập ngay
-                                        </Button>
-                                    </Link>
-                                </CardContent>
-                            </Card>
+                                    </CardContent>
+                                </Card>
+                            </Link>
                         );
                     })}
-                </div>
-
-                {/* Info Box */}
-                <div className="mt-12 rounded-2xl border bg-card p-6 text-center">
-                    <p className="text-sm text-muted-foreground">
-                        Hệ thống đang trong giai đoạn phát triển. Các tính năng Schedule và
-                        Quản lý Nhân viên đang được ưu tiên.
-                    </p>
                 </div>
             </main>
         </div>

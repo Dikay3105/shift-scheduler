@@ -1,3 +1,4 @@
+import AdminHeader from "@/components/adminHeader";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 
@@ -519,114 +520,131 @@ function AvatarGeneratorPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[linear-gradient(135deg,#f8f1e9,#f4e9d8)] py-10">
-            <div className="container mx-auto px-4">
-                {/* <div className="mb-10 text-center">
-                    <h1 className="text-5xl font-bold">Cinnamon Forest</h1>
+        <div className="min-h-screen overflow-hidden bg-muted/30">
+            <AdminHeader
+                title="Avatar"
+                description="Thiết kế và lưu avatar nhân viên"
+                backTo="/"
+            />
 
-                    <p className="mt-3 text-lg text-muted-foreground">
-                        Tạo avatar khung tròn có logo phía dưới
-                    </p>
-                </div> */}
-
-                <div className="grid gap-8 lg:grid-cols-[420px_1fr]">
-                    {/* Controls */}
-                    <div className="rounded-2xl bg-white p-6 shadow-xl">
-                        <h2 className="mb-6 text-xl font-semibold">
-                            Thông tin nhân viên
-                        </h2>
-
-                        <div className="mb-6">
-                            <label className="mb-2 block font-medium">
-                                Ảnh đại diện
-                            </label>
-
-                            <label className="block cursor-pointer rounded-2xl border-2 border-dashed border-[#c5b8a5] p-10 text-center transition hover:bg-[#f8f1e9]">
-                                <div className="mb-3 text-5xl">☁️</div>
-
-                                <p className="font-medium">
-                                    Kéo thả ảnh vào đây
-                                </p>
+            {/* CONTENT */}
+            <div className="h-[calc(100vh-80px)] overflow-hidden bg-[linear-gradient(135deg,#f8f1e9,#f4e9d8)] pb-5">
+                <div className="container mx-auto h-full px-4 pt-5 pb-6">
+                    <div className="grid h-full gap-8 lg:grid-cols-[420px_1fr]">
+                        {/* LEFT PANEL */}
+                        <div className="flex h-full flex-col rounded-3xl bg-white p-6 pb-8 shadow-2xl">
+                            <div className="mb-6">
+                                <h2 className="text-2xl font-bold">
+                                    Thông tin nhân viên
+                                </h2>
 
                                 <p className="mt-1 text-sm text-muted-foreground">
-                                    hoặc nhấn để chọn
+                                    Tạo avatar và khung nhân viên
                                 </p>
+                            </div>
 
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0];
+                            {/* Upload */}
+                            <div className="mb-6">
+                                <label className="mb-2 block font-medium">
+                                    Ảnh đại diện
+                                </label>
 
-                                        if (file) loadImage(file);
-                                    }}
-                                />
-                            </label>
-                        </div>
+                                <label className="block cursor-pointer rounded-3xl border-2 border-dashed border-[#c5b8a5] p-10 text-center transition-all duration-300 hover:scale-[1.01] hover:bg-[#f8f1e9]">
+                                    <div className="mb-3 text-5xl">☁️</div>
 
-                        <div className="mb-4">
-                            <label className="mb-2 block">
-                                Tên nhân viên
-                            </label>
+                                    <p className="font-semibold">
+                                        Kéo thả ảnh vào đây
+                                    </p>
 
-                            <input
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                placeholder="Nguyễn Văn An"
-                                className="w-full rounded-xl border px-4 py-3 outline-none focus:ring-2"
-                            />
-                        </div>
+                                    <p className="mt-1 text-sm text-muted-foreground">
+                                        hoặc nhấn để chọn ảnh
+                                    </p>
 
-                        <div className="mb-6">
-                            <label className="mb-2 block">
-                                Chức vụ
-                            </label>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
 
-                            <input
-                                value={role}
-                                onChange={(e) => setRole(e.target.value)}
-                                placeholder="Barista · Staff"
-                                className="w-full rounded-xl border px-4 py-3 outline-none focus:ring-2"
-                            />
-                        </div>
+                                            if (file) loadImage(file);
+                                        }}
+                                    />
+                                </label>
+                            </div>
 
-                        <div className="grid gap-3">
-                            <button
-                                onClick={gen}
-                                className="rounded-xl bg-[#5B7B8C] px-5 py-3 text-lg font-medium text-white transition hover:opacity-90"
-                            >
-                                ✨ Tạo Avatar
-                            </button>
+                            {/* Inputs */}
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium">
+                                        Tên nhân viên
+                                    </label>
 
-                            <button
-                                onClick={dl}
-                                className="rounded-xl bg-green-600 px-5 py-3 text-lg font-medium text-white transition hover:bg-green-700"
-                            >
-                                ⬇️ Tải PNG (800×800)
-                            </button>
-                        </div>
-                    </div>
+                                    <input
+                                        value={name}
+                                        onChange={(e) =>
+                                            setName(e.target.value)
+                                        }
+                                        placeholder="Nguyễn Văn An"
+                                        className="w-full rounded-2xl border bg-background px-4 py-3 outline-none transition focus:ring-2"
+                                    />
+                                </div>
 
-                    {/* Preview */}
-                    <div className="rounded-2xl bg-white p-6 shadow-xl">
-                        <div className="mb-5 text-center">
-                            <h2 className="text-2xl font-semibold">
-                                Xem trước
-                            </h2>
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium">
+                                        Chức vụ
+                                    </label>
 
-                            <div className="mt-2 inline-block rounded-full bg-gray-200 px-4 py-1 text-sm">
-                                800×800
+                                    <input
+                                        value={role}
+                                        onChange={(e) =>
+                                            setRole(e.target.value)
+                                        }
+                                        placeholder="Barista · Staff"
+                                        className="w-full rounded-2xl border bg-background px-4 py-3 outline-none transition focus:ring-2"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Buttons */}
+                            <div className="mt-auto grid gap-3 pt-6">
+                                <button
+                                    onClick={gen}
+                                    className="rounded-2xl bg-[#5B7B8C] px-5 py-3 text-lg font-medium text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:opacity-90"
+                                >
+                                    ✨ Tạo Avatar
+                                </button>
+
+                                <button
+                                    onClick={dl}
+                                    className="rounded-2xl bg-green-600 px-5 py-3 text-lg font-medium text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-green-700"
+                                >
+                                    ⬇️ Tải PNG (800×800)
+                                </button>
                             </div>
                         </div>
 
-                        <div className="rounded-2xl bg-[#f8f4eb] p-5 text-center">
-                            <canvas
-                                ref={canvasRef}
-                                width={800}
-                                height={800}
-                                className="mx-auto w-full max-w-[420px] rounded-xl border border-[#e0d9cc] bg-white shadow-lg"
-                            />
+                        {/* RIGHT PANEL */}
+                        <div className="flex h-full flex-col rounded-3xl bg-white p-6 shadow-2xl">
+                            <div className="mb-5 text-center">
+                                <h2 className="text-3xl font-bold">
+                                    Xem trước
+                                </h2>
+
+                                <div className="mt-3 inline-block rounded-full bg-muted px-4 py-1 text-sm">
+                                    800 × 800
+                                </div>
+                            </div>
+
+                            {/* Canvas Container */}
+                            <div className="flex flex-1 items-center justify-center rounded-3xl bg-[#f8f4eb] p-5">
+                                <canvas
+                                    ref={canvasRef}
+                                    width={800}
+                                    height={800}
+                                    className="aspect-square w-full max-w-[min(500px,65vh)] rounded-2xl border border-[#e0d9cc] bg-white shadow-2xl"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>

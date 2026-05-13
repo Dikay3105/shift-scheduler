@@ -1,51 +1,69 @@
-// src/hooks/use-schedule.ts
 import { useEffect, useState, useCallback } from "react";
-import type { ScheduleState, Employee, Shift, Assignments } from "@/lib/schedule-types";
+import type {
+  ScheduleState,
+  Employee,
+  Shift,
+  Assignments,
+} from "@/lib/schedule-types";
+
 import { scheduleApi } from "@/services/api";
 
 export function useSchedule() {
-  const [state, setState] = useState<ScheduleState>({
+  const [state, setState] = useState<
+    ScheduleState & {
+      scheduleMap: Record<string, string>;
+    }
+  >({
     employees: [],
     shifts: [],
     assignments: {},
+    scheduleMap: {},
   });
+
   const [hydrated, setHydrated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Fetch tất cả dữ liệu
   const fetchAllData = useCallback(async () => {
     try {
       setLoading(true);
+
+      const startDate = "2025-01-01";
+      const endDate = "2026-12-31";
+
       const [empRes, shiftRes, scheduleRes] = await Promise.all([
         scheduleApi.getEmployees(),
         scheduleApi.getShifts(),
-        scheduleApi.getSchedules(new Date().toISOString().slice(0, 10)),
+        scheduleApi.getSchedules(startDate, endDate),
       ]);
 
-      const employees: any[] = empRes.data || [];
-      const shiftsApi: any[] = shiftRes.data || [];
-      const schedules: any[] = scheduleRes.data || [];
+      const employees = empRes.data || [];
+      const shiftsApi = shiftRes.data || [];
+      const schedules = scheduleRes.data || [];
 
-      // Chuyển đổi assignments
       const assignments: Assignments = {};
+      const scheduleMap: Record<string, string> = {};
+
       schedules.forEach((sch: any) => {
         const dateKey = sch.date.split("T")[0];
+
         const empId = sch.employee?._id || sch.employee;
         const shiftId = sch.shift?._id || sch.shift;
-        if (empId && shiftId) {
-          assignments[`${empId}|${dateKey}`] = shiftId;
-        }
+
+        const key = `${empId}|${dateKey}`;
+
+        assignments[key] = shiftId;
+        scheduleMap[key] = sch._id;
       });
 
       setState({
-        employees: employees.map((emp) => ({
+        employees: employees.map((emp: any) => ({
           id: emp._id,
           name: emp.fullName,
           color: "#3b82f6",
           role: emp.position,
         })),
 
-        shifts: shiftsApi.map((s) => ({
+        shifts: shiftsApi.map((s: any) => ({
           id: s._id,
           code: s.shiftCode,
           label: "",
@@ -56,9 +74,10 @@ export function useSchedule() {
         })),
 
         assignments,
+        scheduleMap,
       });
     } catch (error) {
-      console.error("Lỗi fetch data:", error);
+      console.error(error);
     } finally {
       setLoading(false);
       setHydrated(true);
@@ -69,85 +88,167 @@ export function useSchedule() {
     fetchAllData();
   }, [fetchAllData]);
 
-  // ==================== EMPLOYEES ====================
-  const addEmployee = useCallback(async (name: string, color: string, role?: string) => {
-    const res = await scheduleApi.createEmployee({
-      employeeCode: `NV${Date.now().toString().slice(-4)}`,
-      fullName: name,
-      email: `employee${Date.now()}@gmail.com`,
-      phone: "0987654321",
-      position: role || "",
-    });
-    if (res.success) await fetchAllData();
-  }, [fetchAllData]);
+  // ================= EMPLOYEES =================
 
-  const updateEmployee = useCallback(async (id: string, patch: Partial<Employee>) => {
-    await scheduleApi.updateEmployee(id, {
-      fullName: patch.name,
-      position: patch.role,
-    });
-    await fetchAllData();
-  }, [fetchAllData]);
+  const addEmployee = useCallback(
+    async (name: string, color: string, role?: string) => {
+      await scheduleApi.createEmployee({
+        employeeCode: `NV${Date.now().toString().slice(-4)}`,
+        fullName: name,
+        email: `employee${Date.now()}@gmail.com`,
+        phone: "0987654321",
+        position: role || "",
+      });
 
-  const deleteEmployee = useCallback(async (id: string) => {
-    if (!confirm("Xóa nhân viên này?")) return;
-    await scheduleApi.deleteEmployee(id);
-    await fetchAllData();
-  }, [fetchAllData]);
+      await fetchAllData();
+    },
+    [fetchAllData]
+  );
 
-  // ==================== SHIFTS ====================
-  const addShift = useCallback(async (shift: Omit<Shift, "id">) => {
-    const res = await scheduleApi.createShift({
-      shiftCode: shift.code,
-      shiftName: "",
-      startTime: shift.start,
-      endTime: shift.end,
-      color: shift.bg,
-    });
-    if (res.success) await fetchAllData();
-  }, [fetchAllData]);
+  const updateEmployee = useCallback(
+    async (id: string, patch: Partial<Employee>) => {
+      await scheduleApi.updateEmployee(id, {
+        fullName: patch.name,
+        position: patch.role,
+      });
 
-  const updateShift = useCallback(async (id: string, patch: Partial<Shift>) => {
-    await scheduleApi.updateShift(id, {
-      shiftCode: patch.code,
-      shiftName: "",
-      startTime: patch.start,
-      endTime: patch.end,
-      color: patch.bg,
-    });
-    await fetchAllData();
-  }, [fetchAllData]);
+      await fetchAllData();
+    },
+    [fetchAllData]
+  );
 
-  const deleteShift = useCallback(async (id: string) => {
-    if (!confirm("Xóa ca này?")) return;
-    await scheduleApi.deleteShift(id);
-    await fetchAllData();
-  }, [fetchAllData]);
+  const deleteEmployee = useCallback(
+    async (id: string) => {
+      if (!confirm("Xóa nhân viên này?")) return;
 
-  // ==================== ASSIGNMENTS ====================
-  const setAssignment = useCallback(async (empId: string, dateKey: string, shiftId: string | null) => {
-    if (!shiftId) return;
-    await scheduleApi.createSchedule({ employee: empId, shift: shiftId, date: dateKey });
-    await fetchAllData();
-  }, [fetchAllData]);
+      await scheduleApi.deleteEmployee(id);
 
-  const clearWeek = useCallback(async () => {
-    alert("Chức năng xóa tuần chưa được hỗ trợ bulk delete.");
-    await fetchAllData();
-  }, [fetchAllData]);
+      await fetchAllData();
+    },
+    [fetchAllData]
+  );
+
+  // ================= SHIFTS =================
+
+  const addShift = useCallback(
+    async (shift: Omit<Shift, "id">) => {
+      await scheduleApi.createShift({
+        shiftCode: shift.code,
+        shiftName: "",
+        startTime: shift.start,
+        endTime: shift.end,
+        color: shift.bg,
+      });
+
+      await fetchAllData();
+    },
+    [fetchAllData]
+  );
+
+  const updateShift = useCallback(
+    async (id: string, patch: Partial<Shift>) => {
+      await scheduleApi.updateShift(id, {
+        shiftCode: patch.code,
+        shiftName: "",
+        startTime: patch.start,
+        endTime: patch.end,
+        color: patch.bg,
+      });
+
+      await fetchAllData();
+    },
+    [fetchAllData]
+  );
+
+  const deleteShift = useCallback(
+    async (id: string) => {
+      if (!confirm("Xóa ca này?")) return;
+
+      await scheduleApi.deleteShift(id);
+
+      await fetchAllData();
+    },
+    [fetchAllData]
+  );
+
+  // ================= ASSIGNMENTS =================
+
+  const setAssignment = useCallback(
+    async (
+      empId: string,
+      dateKey: string,
+      shiftId: string | null
+    ) => {
+      const key = `${empId}|${dateKey}`;
+
+      const existingScheduleId = state.scheduleMap[key];
+
+      // ===== DELETE =====
+      if (!shiftId) {
+        if (existingScheduleId) {
+          await scheduleApi.deleteSchedule(existingScheduleId);
+        }
+
+        await fetchAllData();
+        return;
+      }
+
+      // ===== UPDATE =====
+      if (existingScheduleId) {
+        await scheduleApi.updateSchedule(existingScheduleId, {
+          shift: shiftId,
+        });
+      }
+
+      // ===== CREATE =====
+      else {
+        await scheduleApi.createSchedule({
+          employee: empId,
+          shift: shiftId,
+          date: dateKey,
+        });
+      }
+
+      await fetchAllData();
+    },
+    [fetchAllData, state.scheduleMap]
+  );
+
+  const clearWeek = useCallback(
+    async (dayKeys: string[]) => {
+      const promises: Promise<any>[] = [];
+
+      Object.entries(state.scheduleMap).forEach(([key, scheduleId]) => {
+        const [, dateKey] = key.split("|");
+
+        if (dayKeys.includes(dateKey)) {
+          promises.push(scheduleApi.deleteSchedule(scheduleId));
+        }
+      });
+
+      await Promise.all(promises);
+
+      await fetchAllData();
+    },
+    [fetchAllData, state.scheduleMap]
+  );
 
   return {
     state,
     hydrated,
     loading,
+
     addEmployee,
     updateEmployee,
     deleteEmployee,
+
     addShift,
     updateShift,
     deleteShift,
+
     setAssignment,
     clearWeek,
+
     refresh: fetchAllData,
   };
 }
