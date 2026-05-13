@@ -458,11 +458,9 @@ function SchedulePage() {
         <ShiftManagerModal
           open={shiftOpen}
           onOpenChange={setShiftOpen}
-          shifts={state.shifts}
           onAdd={addShift}
           onUpdate={updateShift}
           onDelete={deleteShift}
-          onRefresh={refresh}
         />
 
         <ShiftPickerModal
