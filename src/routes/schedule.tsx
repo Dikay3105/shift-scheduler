@@ -34,7 +34,9 @@ import {
   Clock,
   Trash2,
   CalendarDays,
+  Search,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import AdminHeader from "@/components/adminHeader";
 
 export const Route = createFileRoute("/schedule")({
