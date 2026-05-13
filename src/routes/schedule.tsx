@@ -87,7 +87,7 @@ function SchedulePage() {
   const [searchInput, setSearchInput] = useState("");
   const [searchError, setSearchError] = useState<string | null>(null);
 
-  const [exportOpen, setExportOpen] = useState(false);
+  
   const [exporting, setExporting] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
 
