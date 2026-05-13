@@ -144,7 +144,6 @@ function SchedulePage() {
       XLSX.writeFile(wb, `${fileBase}.xlsx`);
     } finally {
       setExporting(false);
-      setExportOpen(false);
     }
   };
 
@@ -160,7 +159,6 @@ function SchedulePage() {
       link.click();
     } finally {
       setExporting(false);
-      setExportOpen(false);
     }
   };
 
@@ -184,7 +182,6 @@ function SchedulePage() {
       pdf.save(`${fileBase}.pdf`);
     } finally {
       setExporting(false);
-      setExportOpen(false);
     }
   };
 
