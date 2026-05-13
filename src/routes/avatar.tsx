@@ -607,17 +607,17 @@ function AvatarGeneratorPage() {
                             </div>
 
                             {/* Buttons */}
-                            <div className="mt-auto grid gap-3 pt-6">
+                            <div className="mt-auto grid gap-2 pt-4">
                                 <button
                                     onClick={gen}
-                                    className="rounded-2xl bg-[#5B7B8C] px-5 py-3 text-lg font-medium text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:opacity-90"
+                                    className="rounded-2xl bg-[#5B7B8C] px-4 py-2.5 text-sm font-medium text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:opacity-90"
                                 >
                                     ✨ Tạo Avatar
                                 </button>
 
                                 <button
                                     onClick={dl}
-                                    className="rounded-2xl bg-green-600 px-5 py-3 text-lg font-medium text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-green-700"
+                                    className="rounded-2xl bg-green-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-green-700"
                                 >
                                     ⬇️ Tải PNG (800×800)
                                 </button>
@@ -625,24 +625,24 @@ function AvatarGeneratorPage() {
                         </div>
 
                         {/* RIGHT PANEL */}
-                        <div className="flex h-full flex-col rounded-3xl bg-white p-6 shadow-2xl">
-                            <div className="mb-5 text-center">
-                                <h2 className="text-3xl font-bold">
+                        <div className="flex flex-col rounded-3xl bg-white p-5 shadow-2xl">
+                            <div className="mb-3 text-center">
+                                <h2 className="text-2xl font-bold">
                                     Xem trước
                                 </h2>
 
-                                <div className="mt-3 inline-block rounded-full bg-muted px-4 py-1 text-sm">
+                                <div className="mt-2 inline-block rounded-full bg-muted px-3 py-0.5 text-xs">
                                     800 × 800
                                 </div>
                             </div>
 
                             {/* Canvas Container */}
-                            <div className="flex flex-1 items-center justify-center rounded-3xl bg-[#f8f4eb] p-5">
+                            <div className="flex flex-1 items-center justify-center rounded-3xl bg-[#f8f4eb] p-4">
                                 <canvas
                                     ref={canvasRef}
                                     width={800}
                                     height={800}
-                                    className="aspect-square w-full max-w-[min(500px,65vh)] rounded-2xl border border-[#e0d9cc] bg-white shadow-2xl"
+                                    className="aspect-square w-full max-w-[min(420px,55vh)] rounded-2xl border border-[#e0d9cc] bg-white shadow-2xl"
                                 />
                             </div>
                         </div>
