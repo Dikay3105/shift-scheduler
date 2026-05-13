@@ -37,7 +37,7 @@ import {
   Search,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import AdminHeader from "@/components/adminHeader";
+import AdminHeader from "@/components/AdminHeader";
 
 export const Route = createFileRoute("/schedule")({
   component: SchedulePage,
