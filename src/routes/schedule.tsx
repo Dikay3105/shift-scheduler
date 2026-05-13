@@ -176,6 +176,34 @@ function SchedulePage() {
               </p>
             </div>
 
+            <form
+              onSubmit={handleSearch}
+              className="flex w-full items-start gap-2 sm:w-auto"
+            >
+              <div className="flex flex-col">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={searchInput}
+                    onChange={(e) => {
+                      setSearchInput(e.target.value);
+                      if (searchError) setSearchError(null);
+                    }}
+                    placeholder="DD/MM hoặc DD/MM/YYYY"
+                    className="h-9 w-[220px] pl-8"
+                  />
+                </div>
+                {searchError && (
+                  <span className="mt-1 text-[11px] text-destructive">
+                    {searchError}
+                  </span>
+                )}
+              </div>
+              <Button type="submit" size="sm" variant="default">
+                Tìm tuần
+              </Button>
+            </form>
+
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="outline"
