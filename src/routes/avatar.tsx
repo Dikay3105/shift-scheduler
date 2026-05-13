@@ -544,21 +544,21 @@ function AvatarGeneratorPage() {
                             </div>
 
                             {/* Upload */}
-                            <div className="mb-6">
-                                <label className="mb-2 block font-medium">
+                            <div className="mb-4">
+                                <label className="mb-2 block text-sm font-medium">
                                     Ảnh đại diện
                                 </label>
 
-                                <label className="block cursor-pointer rounded-3xl border-2 border-dashed border-[#c5b8a5] p-10 text-center transition-all duration-300 hover:scale-[1.01] hover:bg-[#f8f1e9]">
-                                    <div className="mb-3 text-5xl">☁️</div>
-
-                                    <p className="font-semibold">
-                                        Kéo thả ảnh vào đây
-                                    </p>
-
-                                    <p className="mt-1 text-sm text-muted-foreground">
-                                        hoặc nhấn để chọn ảnh
-                                    </p>
+                                <label className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-dashed border-[#c5b8a5] p-3 text-left transition-all duration-300 hover:bg-[#f8f1e9]">
+                                    <div className="text-2xl">☁️</div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-semibold">
+                                            Kéo thả ảnh vào đây
+                                        </p>
+                                        <p className="truncate text-xs text-muted-foreground">
+                                            hoặc nhấn để chọn ảnh
+                                        </p>
+                                    </div>
 
                                     <input
                                         type="file"
