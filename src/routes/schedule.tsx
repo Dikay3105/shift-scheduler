@@ -170,7 +170,7 @@ function SchedulePage() {
       const rows = state.employees.map((emp) => {
         const cells = dayKeys.map((dk) => {
           const sid = state.assignments[`${emp.id}|${dk}`];
-          const sh = sid ? state.shifts.find((s) => s.id === sid) : null;
+          const sh = sid ? shiftById.get(sid) : null;
           return sh ? `${sh.code} (${sh.start}-${sh.end})` : "";
         });
         return [emp.name, emp.role || "", ...cells];
@@ -376,7 +376,7 @@ function SchedulePage() {
                       const isWeekend = i >= 5;
                       const isToday = dk === todayKey;
                       const shiftId = state.assignments[`${emp.id}|${dk}`];
-                      const shift = shiftId ? state.shifts.find((s) => s.id === shiftId) : null;
+                      const shift = shiftId ? shiftById.get(shiftId) : null;
 
                       return (
                         <td
