@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 import type { Shift, ShiftGroup } from "@/lib/schedule-types";
+import { getShiftColor } from "@/lib/shift-colors";
 
 import { scheduleApi } from "@/services/api";
 
