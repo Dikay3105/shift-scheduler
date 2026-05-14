@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSchedule } from "@/hooks/use-schedule";
+import { getShiftColor } from "@/lib/shift-colors";
 import { EmployeeCardPrintable } from "@/components/schedule/EmployeeCardPrintable";
 import {
   Dialog,
