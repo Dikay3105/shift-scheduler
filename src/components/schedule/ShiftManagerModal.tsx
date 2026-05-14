@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Trash2, Plus, CheckCircle, Loader2 } from "lucide-react";
 import type { Shift, ShiftGroup } from "@/lib/schedule-types";
+import { getShiftColor } from "@/lib/shift-colors";
 import { scheduleApi } from "@/services/api";
 
 const GROUP_LABELS: Record<ShiftGroup, string> = {
