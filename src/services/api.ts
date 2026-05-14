@@ -1,4 +1,4 @@
-const API_BASE = "https://cfwebbe.onrender.com/api"; // Update this to your actual API base URL
+const API_BASE = import.meta.env.VITE_API_BASE_URL;// Update this to your actual API base URL
 
 export const scheduleApi = {
   // ============== EMPLOYEES ==============
