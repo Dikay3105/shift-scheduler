@@ -65,10 +65,9 @@ export function ShiftPickerModal({
 
       const shiftsApi = response.data || [];
 
-      const formattedShifts: Shift[] = shiftsApi.map((s: any) => {
+      const formattedShifts: Shift[] = shiftsApi.map((s: any, i: number) => {
         const group = getGroupFromTime(s.startTime);
-
-        const preset = getPresetColors(group);
+        const color = getShiftColor(i);
 
         return {
           id: s._id,
@@ -77,8 +76,8 @@ export function ShiftPickerModal({
           start: s.startTime,
           end: s.endTime,
           group,
-          bg: s.color || preset.bg,
-          fg: preset.fg,
+          bg: color.bg,
+          fg: color.fg,
         };
       });
 
