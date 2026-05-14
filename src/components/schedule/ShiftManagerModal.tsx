@@ -90,8 +90,7 @@ export function ShiftManagerModal({
 
       const formattedShifts: Shift[] = shiftsApi.map((s: any, index: number) => {
         const group = getGroupFromTime(s.startTime);
-        const preset = GROUP_PRESETS[group];
-        const extra = EXTRA_COLORS[index % EXTRA_COLORS.length];
+        const color = getShiftColor(index);
 
         return {
           id: s._id,
@@ -100,8 +99,8 @@ export function ShiftManagerModal({
           start: s.startTime,
           end: s.endTime,
           group,
-          bg: s.color || extra.bg,        // Dùng màu extra để đa dạng
-          fg: extra.fg,
+          bg: color.bg,
+          fg: color.fg,
         };
       });
 
