@@ -296,8 +296,7 @@ function SchedulePage() {
       setExporting(false);
     }
   };
-
-
+  if (!hydrated) {
     return <div className="min-h-screen bg-background" />;
   }
 
