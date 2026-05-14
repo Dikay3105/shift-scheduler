@@ -1,8 +1,9 @@
 import AdminHeader from "@/components/AdminHeader";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import QRCode from "react-qr-code";
-
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 export const Route = createFileRoute("/employeeCard")({
     component: EmployeeCardPage,
 });
@@ -10,6 +11,8 @@ export const Route = createFileRoute("/employeeCard")({
 function EmployeeCardPage() {
     const [flipped, setFlipped] = useState(false);
     const [tab, setTab] = useState<"front" | "back">("front");
+    const frontRef = useRef<HTMLDivElement>(null);
+    const backRef = useRef<HTMLDivElement>(null);
 
     const [front, setFront] = useState({
         name: "Nguyễn Văn A",
@@ -23,6 +26,93 @@ function EmployeeCardPage() {
         email: "hello@cinnamonforest.com",
         web: "cinnamonforest.com",
     });
+
+    const mirrorImage = async (dataUrl: string): Promise<string> => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement("canvas");
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext("2d")!;
+                ctx.translate(img.width, 0);
+                ctx.scale(-1, 1);
+                ctx.drawImage(img, 0, 0);
+                resolve(canvas.toDataURL("image/png"));
+            };
+            img.src = dataUrl;
+        });
+    };
+
+    const captureCard = async (side: "front" | "back") => {
+        const { toPng } = await import("html-to-image");
+
+        const wasFlipped = flipped;
+        if (side === "back" && !flipped) setFlipped(true);
+        if (side === "front" && flipped) setFlipped(false);
+
+        await new Promise(r => setTimeout(r, 800));
+
+        const sourceRef = side === "front" ? frontRef.current : backRef.current;
+        if (!sourceRef) return null;
+
+        const parent = sourceRef.parentElement;
+        if (parent) parent.style.transition = "none";
+        if (parent) parent.style.transform = side === "back" ? "rotateY(180deg)" : "none";
+
+        sourceRef.style.backfaceVisibility = "visible";
+        sourceRef.style.webkitBackfaceVisibility = "visible";
+
+        await new Promise(r => setTimeout(r, 50));
+
+        let dataUrl = await toPng(sourceRef, {
+            pixelRatio: 3,
+            backgroundColor: "#FFFAF8",
+            width: sourceRef.offsetWidth,
+            height: sourceRef.offsetHeight,
+        });
+
+        // Mirror mặt sau sau khi capture
+        if (side === "back") {
+            dataUrl = await mirrorImage(dataUrl);
+        }
+
+        // Restore
+        sourceRef.style.backfaceVisibility = "";
+        sourceRef.style.webkitBackfaceVisibility = "";
+        if (parent) {
+            parent.style.transform = wasFlipped ? "rotateY(180deg)" : "";
+            parent.style.transition = "";
+        }
+        if (wasFlipped !== flipped) setFlipped(wasFlipped);
+
+        return dataUrl;
+    };
+    const exportPNG = async (side: "front" | "back") => {
+        const dataUrl = await captureCard(side);
+        if (!dataUrl) return;
+        const link = document.createElement("a");
+        link.download = `the-nhanvien-${front.name.replace(/\s/g, "_")}-${side}.png`;
+        link.href = dataUrl;
+        link.click();
+    };
+
+    const exportPDF = async () => {
+        const frontDataUrl = await captureCard("front");
+        const backDataUrl = await captureCard("back");
+        if (!frontDataUrl || !backDataUrl) return;
+
+        const pdf = new jsPDF({
+            orientation: "landscape",
+            unit: "mm",
+            format: [85.6, 54],
+        });
+
+        pdf.addImage(frontDataUrl, "PNG", 0, 0, 85.6, 54);
+        pdf.addPage([85.6, 54], "landscape");
+        pdf.addImage(backDataUrl, "PNG", 0, 0, 85.6, 54);
+        pdf.save(`the-nhanvien-${front.name.replace(/\s/g, "_")}.pdf`);
+    };
 
     const initials = useMemo(() => {
         return front.name
@@ -104,7 +194,7 @@ function EmployeeCardPage() {
                         >
                             <div className="inner">
                                 {/* FRONT */}
-                                <div className="face front">
+                                <div className="face front" ref={frontRef}>
                                     {/* Header */}
                                     <div className="relative flex items-center gap-3 overflow-hidden bg-gradient-to-r from-[#E8607A] via-[#CC4070] to-[#A8305C] px-4 py-3">
                                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/40 bg-white/20">
@@ -191,7 +281,7 @@ function EmployeeCardPage() {
                                 </div>
 
                                 {/* BACK */}
-                                <div className="face back">
+                                <div className="face back" ref={backRef}>
                                     <div className="flex h-9 items-center justify-center gap-2 bg-gradient-to-r from-[#E8607A] to-[#A8305C]">
                                         <svg
                                             width="12"
@@ -253,6 +343,27 @@ function EmployeeCardPage() {
                             </span>
                             Nhấn vào thẻ để lật
                         </p>
+
+                        <div className="flex gap-2 mt-2">
+                            <button
+                                onClick={() => exportPNG("front")}
+                                className="flex items-center gap-1.5 rounded-lg border border-[#FFD6E7] bg-[#FFF0F5] px-3 py-2 text-[11px] font-medium text-[#922054] transition hover:bg-[#FFD6E7]"
+                            >
+                                🖼 PNG mặt trước
+                            </button>
+                            <button
+                                onClick={() => exportPNG("back")}
+                                className="flex items-center gap-1.5 rounded-lg border border-[#FFD6E7] bg-[#FFF0F5] px-3 py-2 text-[11px] font-medium text-[#922054] transition hover:bg-[#FFD6E7]"
+                            >
+                                🖼 PNG mặt sau
+                            </button>
+                            <button
+                                onClick={exportPDF}
+                                className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#E8607A] to-[#A8305C] px-3 py-2 text-[11px] font-medium text-white transition hover:opacity-90"
+                            >
+                                📄 Xuất PDF (2 mặt)
+                            </button>
+                        </div>
                     </div>
 
                     {/* FORM */}
