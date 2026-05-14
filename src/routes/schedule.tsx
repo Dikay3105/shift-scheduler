@@ -1,6 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSchedule } from "@/hooks/use-schedule";
+import { EmployeeCardPrintable } from "@/components/schedule/EmployeeCardPrintable";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { IdCard } from "lucide-react";
 import {
   startOfISOWeek,
   addDays,
@@ -90,6 +100,34 @@ function SchedulePage() {
   
   const [exporting, setExporting] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
+  const cardsRef = useRef<HTMLDivElement>(null);
+  const [cardDialogOpen, setCardDialogOpen] = useState(false);
+  const [cardFormat, setCardFormat] = useState<"pdf" | "png-zip" | "png-sheet">("pdf");
+
+  // Distinct color palette for shifts (overrides API color when duplicated/missing)
+  const SHIFT_PALETTE = [
+    { bg: "#fde68a", fg: "#78350f" }, // amber
+    { bg: "#bfdbfe", fg: "#1e3a8a" }, // blue
+    { bg: "#bbf7d0", fg: "#14532d" }, // green
+    { bg: "#fecaca", fg: "#7f1d1d" }, // red
+    { bg: "#ddd6fe", fg: "#4c1d95" }, // violet
+    { bg: "#fbcfe8", fg: "#831843" }, // pink
+    { bg: "#a5f3fc", fg: "#155e75" }, // cyan
+    { bg: "#fed7aa", fg: "#7c2d12" }, // orange
+    { bg: "#d9f99d", fg: "#365314" }, // lime
+    { bg: "#e9d5ff", fg: "#581c87" }, // purple
+  ];
+  const coloredShifts = useMemo(() => {
+    return state.shifts.map((s, i) => {
+      const p = SHIFT_PALETTE[i % SHIFT_PALETTE.length];
+      return { ...s, bg: p.bg, fg: p.fg };
+    });
+  }, [state.shifts]);
+  const shiftById = useMemo(() => {
+    const m = new Map<string, (typeof coloredShifts)[number]>();
+    coloredShifts.forEach((s) => m.set(s.id, s));
+    return m;
+  }, [coloredShifts]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,7 +170,7 @@ function SchedulePage() {
       const rows = state.employees.map((emp) => {
         const cells = dayKeys.map((dk) => {
           const sid = state.assignments[`${emp.id}|${dk}`];
-          const sh = sid ? state.shifts.find((s) => s.id === sid) : null;
+          const sh = sid ? shiftById.get(sid) : null;
           return sh ? `${sh.code} (${sh.start}-${sh.end})` : "";
         });
         return [emp.name, emp.role || "", ...cells];
@@ -185,6 +223,79 @@ function SchedulePage() {
     }
   };
 
+  const exportEmployeeCards = async () => {
+    if (!cardsRef.current || state.employees.length === 0) return;
+    setExporting(true);
+    try {
+      const { default: html2canvas } = await import("html2canvas-pro");
+      const nodes = Array.from(cardsRef.current.querySelectorAll<HTMLElement>("[data-card]"));
+      const canvases = await Promise.all(
+        nodes.map((n) => html2canvas(n, { scale: 2, backgroundColor: null }))
+      );
+
+      if (cardFormat === "pdf") {
+        const { default: jsPDF } = await import("jspdf");
+        const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+        const pw = pdf.internal.pageSize.getWidth();
+        const ph = pdf.internal.pageSize.getHeight();
+        const margin = 36;
+        const cardW = pw - margin * 2;
+        const cardH = (cardW * 230) / 350;
+        const gap = 18;
+        const perPage = Math.max(1, Math.floor((ph - margin * 2 + gap) / (cardH + gap)));
+        canvases.forEach((c, i) => {
+          const slot = i % perPage;
+          if (i > 0 && slot === 0) pdf.addPage();
+          const y = margin + slot * (cardH + gap);
+          pdf.addImage(c.toDataURL("image/png"), "PNG", margin, y, cardW, cardH);
+        });
+        pdf.save("the-nhan-vien.pdf");
+      } else if (cardFormat === "png-zip") {
+        const { default: JSZip } = await import("jszip");
+        const zip = new JSZip();
+        canvases.forEach((c, i) => {
+          const name = state.employees[i]?.name?.replace(/[^\p{L}\p{N}_-]+/gu, "_") || `nv_${i + 1}`;
+          const dataUrl = c.toDataURL("image/png").split(",")[1];
+          zip.file(`${name}.png`, dataUrl, { base64: true });
+        });
+        const blob = await zip.generateAsync({ type: "blob" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "the-nhan-vien.zip";
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        // png-sheet: combine into one tall image (3 columns)
+        const cols = Math.min(3, canvases.length);
+        const cardW = canvases[0].width;
+        const cardH = canvases[0].height;
+        const gap = 24;
+        const rows = Math.ceil(canvases.length / cols);
+        const sheetW = cols * cardW + (cols + 1) * gap;
+        const sheetH = rows * cardH + (rows + 1) * gap;
+        const sheet = document.createElement("canvas");
+        sheet.width = sheetW;
+        sheet.height = sheetH;
+        const ctx = sheet.getContext("2d")!;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, sheetW, sheetH);
+        canvases.forEach((c, i) => {
+          const r = Math.floor(i / cols);
+          const col = i % cols;
+          ctx.drawImage(c, gap + col * (cardW + gap), gap + r * (cardH + gap));
+        });
+        const a = document.createElement("a");
+        a.download = "the-nhan-vien.png";
+        a.href = sheet.toDataURL("image/png");
+        a.click();
+      }
+
+      setCardDialogOpen(false);
+    } finally {
+      setExporting(false);
+    }
+  };
   if (!hydrated) {
     return <div className="min-h-screen bg-background" />;
   }
@@ -263,6 +374,9 @@ function SchedulePage() {
             <Button size="sm" className="bg-white/15 text-white hover:bg-white/25 border border-white/20" onClick={() => setConfirmClear(true)}>
               <Trash2 className="mr-1.5 h-4 w-4" /> Xóa tuần
             </Button>
+            <Button size="sm" className="bg-white/15 text-white hover:bg-white/25 border border-white/20" onClick={() => setCardDialogOpen(true)}>
+              <IdCard className="mr-1.5 h-4 w-4" /> Tải thẻ NV
+            </Button>
             <div className="ml-auto flex items-center gap-2">
               <Button size="sm" onClick={exportExcel} disabled={exporting} className="bg-emerald-500 text-white hover:bg-emerald-600 shadow-md">
                 <FileSpreadsheet className="mr-1.5 h-4 w-4" /> Excel
@@ -338,7 +452,7 @@ function SchedulePage() {
                       const isWeekend = i >= 5;
                       const isToday = dk === todayKey;
                       const shiftId = state.assignments[`${emp.id}|${dk}`];
-                      const shift = shiftId ? state.shifts.find((s) => s.id === shiftId) : null;
+                      const shift = shiftId ? shiftById.get(shiftId) : null;
 
                       return (
                         <td
@@ -393,7 +507,7 @@ function SchedulePage() {
         {state.shifts.length > 0 && (
           <div className="mt-5 flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-card/60 p-4 shadow-sm backdrop-blur">
             <span className="mr-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">Chú thích ca:</span>
-            {state.shifts.map((s) => (
+            {coloredShifts.map((s) => (
               <span
                 key={s.id}
                 className="inline-flex items-center gap-2 rounded-full border border-white/40 px-3 py-1.5 text-xs font-semibold shadow-sm"
@@ -457,6 +571,70 @@ function SchedulePage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* CARD DOWNLOAD DIALOG */}
+      <Dialog open={cardDialogOpen} onOpenChange={setCardDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Tải thẻ nhân viên</DialogTitle>
+            <DialogDescription>
+              Xuất thẻ cho {state.employees.length} nhân viên. Chọn định dạng bên dưới.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 gap-2">
+            {([
+              { v: "pdf", t: "PDF (gộp nhiều trang)", d: "Tất cả thẻ trong 1 file PDF, tiện in." },
+              { v: "png-zip", t: "ZIP nhiều ảnh PNG", d: "Mỗi nhân viên 1 file PNG riêng." },
+              { v: "png-sheet", t: "1 ảnh PNG tổng hợp", d: "Tất cả thẻ trên 1 ảnh dạng lưới." },
+            ] as const).map((o) => (
+              <button
+                key={o.v}
+                onClick={() => setCardFormat(o.v)}
+                className={`text-left rounded-xl border-2 p-3 transition ${
+                  cardFormat === o.v
+                    ? "border-indigo-500 bg-indigo-50"
+                    : "border-border hover:border-indigo-300"
+                }`}
+              >
+                <div className="text-sm font-semibold">{o.t}</div>
+                <div className="text-xs text-muted-foreground">{o.d}</div>
+              </button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setCardDialogOpen(false)}>Hủy</Button>
+            <Button
+              onClick={exportEmployeeCards}
+              disabled={exporting || state.employees.length === 0}
+              className="bg-gradient-to-r from-rose-500 to-pink-600 text-white"
+            >
+              {exporting ? "Đang xuất..." : "Tải xuống"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* HIDDEN CARDS FOR EXPORT */}
+      <div
+        ref={cardsRef}
+        aria-hidden
+        style={{
+          position: "fixed",
+          left: -10000,
+          top: 0,
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 16,
+          padding: 16,
+          background: "#ffffff",
+        }}
+      >
+        {state.employees.map((emp, i) => (
+          <div key={emp.id} data-card>
+            <EmployeeCardPrintable employee={emp} index={i} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
