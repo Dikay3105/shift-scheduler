@@ -1,9 +1,10 @@
 import AdminHeader from "@/components/AdminHeader";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "react-qr-code";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { scheduleApi } from "@/services/api";
 export const Route = createFileRoute("/employeeCard")({
     component: EmployeeCardPage,
 });
@@ -13,6 +14,7 @@ function EmployeeCardPage() {
     const [tab, setTab] = useState<"front" | "back">("front");
     const frontRef = useRef<HTMLDivElement>(null);
     const backRef = useRef<HTMLDivElement>(null);
+    const [employees, setEmployees] = useState<any[]>([]);
 
     const [front, setFront] = useState({
         name: "Nguyễn Văn A",
@@ -114,6 +116,58 @@ function EmployeeCardPage() {
         pdf.save(`the-nhanvien-${front.name.replace(/\s/g, "_")}.pdf`);
     };
 
+    const exportAllEmployeeCards = async () => {
+        if (!employees.length) return;
+
+        const pdf = new jsPDF({
+            orientation: "landscape",
+            unit: "mm",
+            format: [85.6, 54],
+        });
+
+        const { toPng } = await import("html-to-image");
+
+        for (let i = 0; i < employees.length; i++) {
+            const emp = employees[i];
+
+            const frontEl = document.getElementById(
+                `export-front-${emp._id}`
+            ) as HTMLElement;
+
+            const backEl = document.getElementById(
+                `export-back-${emp._id}`
+            ) as HTMLElement;
+
+            if (!frontEl || !backEl) continue;
+
+            // ===== FRONT =====
+            const frontImg = await toPng(frontEl, {
+                pixelRatio: 3,
+                backgroundColor: "#FFFAF8",
+            });
+
+            if (i !== 0) {
+                pdf.addPage([85.6, 54], "landscape");
+            }
+
+            pdf.addImage(frontImg, "PNG", 0, 0, 85.6, 54);
+
+            // ===== BACK =====
+            const backImgRaw = await toPng(backEl, {
+                pixelRatio: 3,
+                backgroundColor: "#FFFAF8",
+            });
+
+            const backImg = await mirrorImage(backImgRaw);
+
+            pdf.addPage([85.6, 54], "landscape");
+
+            pdf.addImage(backImg, "PNG", 0, 0, 85.6, 54);
+        }
+
+        pdf.save("tat-ca-the-nhan-vien.pdf");
+    };
+
     const initials = useMemo(() => {
         return front.name
             .trim()
@@ -122,6 +176,19 @@ function EmployeeCardPage() {
             .slice(-2)
             .join("");
     }, [front.name]);
+
+    useEffect(() => {
+        const loadEmployees = async () => {
+            try {
+                const res = await scheduleApi.getEmployees();
+                setEmployees(res.data || []);
+            } catch (err) {
+                console.error(err);
+            }
+        };
+
+        loadEmployees();
+    }, []);
 
     return (
         <div className="min-h-screen bg-muted/30">
@@ -363,6 +430,13 @@ function EmployeeCardPage() {
                             >
                                 📄 Xuất PDF (2 mặt)
                             </button>
+
+                            <button
+                                onClick={exportAllEmployeeCards}
+                                className="flex items-center gap-1.5 rounded-lg bg-black px-3 py-2 text-[11px] font-medium text-white transition hover:opacity-90"
+                            >
+                                📦 Xuất tất cả nhân viên
+                            </button>
                         </div>
                     </div>
 
@@ -468,6 +542,95 @@ function EmployeeCardPage() {
                     </div>
                 </div>
             </div>
+
+            {/* HIDDEN EXPORT */}
+            <div className="fixed left-[-99999px] top-0 z-[-1]">
+                {employees.map((emp) => {
+                    const initials = emp.fullName
+                        ?.trim()
+                        .split(/\s+/)
+                        .map((w: string) => w[0]?.toUpperCase() || "")
+                        .slice(-2)
+                        .join("");
+
+                    return (
+                        <div key={emp._id} className="mb-10">
+                            {/* FRONT */}
+                            <div
+                                id={`export-front-${emp._id}`}
+                                className="relative h-[230px] w-[350px] overflow-hidden rounded-[18px] border border-[#FFADD0] bg-[#FFFAF8]"
+                            >
+                                {/* HEADER */}
+                                <div className="relative flex items-center gap-3 overflow-hidden bg-gradient-to-r from-[#E8607A] via-[#CC4070] to-[#A8305C] px-4 py-3">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/40 bg-white/20">
+                                        ✦
+                                    </div>
+
+                                    <div className="flex-1">
+                                        <p className="font-serif text-[15px] font-semibold uppercase tracking-[2px] text-white">
+                                            Cinnamon Forest
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* BODY */}
+                                <div className="flex h-[140px] items-center gap-4 px-4 py-3">
+                                    <div className="flex h-[76px] w-[76px] items-center justify-center rounded-full bg-gradient-to-br from-[#F9C6D5] to-[#E88AAE] text-[28px] font-semibold text-[#922054]">
+                                        {initials}
+                                    </div>
+
+                                    <div>
+                                        <p className="text-[20px] font-semibold text-[#4A0F2A]">
+                                            {emp.fullName}
+                                        </p>
+
+                                        <p className="mt-1 text-[10px] uppercase tracking-[1.2px] text-[#E0528A]">
+                                            {emp.position}
+                                        </p>
+
+                                        <div className="mt-3 flex w-fit items-center overflow-hidden rounded-lg border border-[#FFD6E7] bg-[#FFF0F5]">
+                                            <span className="bg-[#FFD6E7] px-2 py-1 text-[9px] font-medium uppercase tracking-[0.8px] text-[#922054]">
+                                                ID
+                                            </span>
+
+                                            <span className="px-3 py-1 text-[11px] font-medium tracking-[1.2px] text-[#4A0F2A]">
+                                                {emp.employeeCode}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* FOOTER */}
+                                <div className="absolute bottom-0 left-0 right-0 flex h-[30px] items-center justify-center bg-gradient-to-r from-[#CC4070] to-[#E8607A] text-[8px] uppercase tracking-[2px] text-white">
+                                    Nhân viên chính thức
+                                </div>
+                            </div>
+
+                            {/* BACK */}
+                            <div
+                                id={`export-back-${emp._id}`}
+                                className="relative mt-4 h-[230px] w-[350px] overflow-hidden rounded-[18px] border border-[#FFADD0] bg-[#FFFAF8]"
+                            >
+                                <div className="flex h-9 items-center justify-center bg-gradient-to-r from-[#E8607A] to-[#A8305C] text-[12px] font-semibold uppercase tracking-[3px] text-white">
+                                    Cinnamon Forest
+                                </div>
+
+                                <div className="flex h-[170px] items-center justify-center">
+                                    <QRCode
+                                        value={`EMPLOYEE:${emp.employeeCode}`}
+                                        size={120}
+                                        fgColor="#922054"
+                                        bgColor="#FFFFFF"
+                                    />
+                                </div>
+
+                                <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-r from-[#A8305C] to-[#E8607A]" />
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
         </div>
 
     );
@@ -562,6 +725,9 @@ function InfoRow({
             <span className="break-words text-[10px] leading-[1.5] text-[#4A0F2A]">
                 {text}
             </span>
+
+
+
         </div>
     );
 }
