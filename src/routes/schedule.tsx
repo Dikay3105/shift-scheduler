@@ -100,6 +100,34 @@ function SchedulePage() {
   
   const [exporting, setExporting] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
+  const cardsRef = useRef<HTMLDivElement>(null);
+  const [cardDialogOpen, setCardDialogOpen] = useState(false);
+  const [cardFormat, setCardFormat] = useState<"pdf" | "png-zip" | "png-sheet">("pdf");
+
+  // Distinct color palette for shifts (overrides API color when duplicated/missing)
+  const SHIFT_PALETTE = [
+    { bg: "#fde68a", fg: "#78350f" }, // amber
+    { bg: "#bfdbfe", fg: "#1e3a8a" }, // blue
+    { bg: "#bbf7d0", fg: "#14532d" }, // green
+    { bg: "#fecaca", fg: "#7f1d1d" }, // red
+    { bg: "#ddd6fe", fg: "#4c1d95" }, // violet
+    { bg: "#fbcfe8", fg: "#831843" }, // pink
+    { bg: "#a5f3fc", fg: "#155e75" }, // cyan
+    { bg: "#fed7aa", fg: "#7c2d12" }, // orange
+    { bg: "#d9f99d", fg: "#365314" }, // lime
+    { bg: "#e9d5ff", fg: "#581c87" }, // purple
+  ];
+  const coloredShifts = useMemo(() => {
+    return state.shifts.map((s, i) => {
+      const p = SHIFT_PALETTE[i % SHIFT_PALETTE.length];
+      return { ...s, bg: p.bg, fg: p.fg };
+    });
+  }, [state.shifts]);
+  const shiftById = useMemo(() => {
+    const m = new Map<string, (typeof coloredShifts)[number]>();
+    coloredShifts.forEach((s) => m.set(s.id, s));
+    return m;
+  }, [coloredShifts]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
