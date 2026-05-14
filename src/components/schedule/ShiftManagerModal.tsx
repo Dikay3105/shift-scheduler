@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Trash2, Plus, CheckCircle, Loader2 } from "lucide-react";
 import type { Shift, ShiftGroup } from "@/lib/schedule-types";
+import { getShiftColor } from "@/lib/shift-colors";
 import { scheduleApi } from "@/services/api";
 
 const GROUP_LABELS: Record<ShiftGroup, string> = {
@@ -89,8 +90,7 @@ export function ShiftManagerModal({
 
       const formattedShifts: Shift[] = shiftsApi.map((s: any, index: number) => {
         const group = getGroupFromTime(s.startTime);
-        const preset = GROUP_PRESETS[group];
-        const extra = EXTRA_COLORS[index % EXTRA_COLORS.length];
+        const color = getShiftColor(index);
 
         return {
           id: s._id,
@@ -99,8 +99,8 @@ export function ShiftManagerModal({
           start: s.startTime,
           end: s.endTime,
           group,
-          bg: s.color || extra.bg,        // Dùng màu extra để đa dạng
-          fg: extra.fg,
+          bg: color.bg,
+          fg: color.fg,
         };
       });
 
@@ -186,26 +186,38 @@ export function ShiftManagerModal({
 
                   <div className="space-y-2">
                     {list.map((s) => (
-                      <div key={s.id} className="grid grid-cols-12 gap-3 items-center p-4 rounded-xl border bg-card">
-                        <Input
-                          value={s.code}
-                          onChange={(e) => onUpdate(s.id, { code: e.target.value.toUpperCase() })}
-                          className="col-span-2 font-mono font-semibold"
-                        />
+                      <div
+                        key={s.id}
+                        className="grid grid-cols-12 gap-3 items-center p-4 rounded-xl border-2 transition-shadow hover:shadow-md"
+                        style={{
+                          background: `${s.bg}55`,
+                          borderColor: s.bg,
+                        }}
+                      >
+                        <div
+                          className="col-span-2 flex items-center justify-center rounded-lg px-2 py-2 font-mono font-black text-base"
+                          style={{ background: s.bg, color: s.fg }}
+                          title={s.code}
+                        >
+                          {s.code}
+                        </div>
                         <Input
                           type="time"
                           value={s.start}
                           onChange={(e) => onUpdate(s.id, { start: e.target.value })}
-                          className="col-span-2"
+                          className="col-span-2 bg-white/80"
                         />
                         <Input
                           type="time"
                           value={s.end}
                           onChange={(e) => onUpdate(s.id, { end: e.target.value })}
-                          className="col-span-2"
+                          className="col-span-2 bg-white/80"
                         />
 
-                        <div className="col-span-3 text-sm font-medium">
+                        <div
+                          className="col-span-5 text-sm font-semibold"
+                          style={{ color: s.fg }}
+                        >
                           {s.start} – {s.end}
                         </div>
 

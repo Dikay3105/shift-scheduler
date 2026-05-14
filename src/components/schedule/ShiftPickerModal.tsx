@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 import type { Shift, ShiftGroup } from "@/lib/schedule-types";
+import { getShiftColor } from "@/lib/shift-colors";
 
 import { scheduleApi } from "@/services/api";
 
@@ -64,10 +65,9 @@ export function ShiftPickerModal({
 
       const shiftsApi = response.data || [];
 
-      const formattedShifts: Shift[] = shiftsApi.map((s: any) => {
+      const formattedShifts: Shift[] = shiftsApi.map((s: any, i: number) => {
         const group = getGroupFromTime(s.startTime);
-
-        const preset = getPresetColors(group);
+        const color = getShiftColor(i);
 
         return {
           id: s._id,
@@ -76,8 +76,8 @@ export function ShiftPickerModal({
           start: s.startTime,
           end: s.endTime,
           group,
-          bg: s.color || preset.bg,
-          fg: preset.fg,
+          bg: color.bg,
+          fg: color.fg,
         };
       });
 
@@ -197,50 +197,27 @@ export function ShiftPickerModal({
                           className={`
                     relative rounded-2xl border px-3 py-3 text-center
                     transition-all duration-200
-
                     ${selected
-                              ? `
-                          scale-[1.02]
-                          border-transparent
-                          shadow-lg
-                        `
-                              : `
-                          border-slate-200
-                          bg-slate-50
-                          hover:border-slate-300
-                          hover:bg-slate-100
-                        `
+                              ? "scale-[1.02] border-transparent shadow-lg ring-2 ring-offset-2 ring-slate-900/20"
+                              : "border-transparent hover:scale-[1.02] hover:shadow-md"
                             }
                   `}
-                          style={
-                            selected
-                              ? {
-                                background: s.bg,
-                                color: s.fg,
-                                boxShadow: `0 8px 20px ${s.bg}90`,
-                              }
-                              : {}
-                          }
+                          style={{
+                            background: s.bg,
+                            color: s.fg,
+                            boxShadow: selected ? `0 8px 20px ${s.bg}` : undefined,
+                          }}
                         >
-                          {/* selected glow */}
-                          {selected && (
-                            <div className="absolute inset-0 rounded-2xl ring-2 ring-white/40" />
-                          )}
-
                           <div
-                            className={`
-                      text-[18px] font-black tracking-wide
-                      ${selected ? "text-white" : "text-slate-800"}
-                    `}
+                            className="text-[18px] font-black tracking-wide"
+                            style={{ color: s.fg }}
                           >
                             {s.code}
                           </div>
 
                           <div
-                            className={`
-                      mt-1 text-[12px] font-semibold
-                      ${selected ? "text-white/90" : "text-slate-500"}
-                    `}
+                            className="mt-1 text-[12px] font-semibold opacity-80"
+                            style={{ color: s.fg }}
                           >
                             {s.start}–{s.end}
                           </div>
