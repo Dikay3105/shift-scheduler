@@ -431,7 +431,7 @@ function SchedulePage() {
         {state.shifts.length > 0 && (
           <div className="mt-5 flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-card/60 p-4 shadow-sm backdrop-blur">
             <span className="mr-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">Chú thích ca:</span>
-            {state.shifts.map((s) => (
+            {coloredShifts.map((s) => (
               <span
                 key={s.id}
                 className="inline-flex items-center gap-2 rounded-full border border-white/40 px-3 py-1.5 text-xs font-semibold shadow-sm"
