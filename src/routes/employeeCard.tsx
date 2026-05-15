@@ -673,22 +673,47 @@ function EmployeeCardPage() {
                                 </div>
                             </div>
 
-                            {/* BACK */}
+                            {/* BACK - matching displayed mock */}
                             <div
                                 id={`export-back-${emp._id}`}
                                 className="relative mt-4 h-[230px] w-[350px] overflow-hidden rounded-[18px] border border-[#FFADD0] bg-[#FFFAF8]"
                             >
-                                <div className="flex h-9 items-center justify-center bg-gradient-to-r from-[#E8607A] to-[#A8305C] text-[12px] font-semibold uppercase tracking-[3px] text-white">
-                                    Cinnamon Forest
+                                {/* Header */}
+                                <div className="flex h-9 items-center justify-center gap-2 bg-gradient-to-r from-[#E8607A] to-[#A8305C]">
+                                    <span className="text-white text-[14px]">✦</span>
+                                    <span className="font-serif text-[12px] font-semibold uppercase tracking-[3px] text-white">
+                                        Cinnamon Forest
+                                    </span>
                                 </div>
 
-                                <div className="flex h-[170px] items-center justify-center">
-                                    <QRCode
-                                        value={`EMPLOYEE:${emp.employeeCode}`}
-                                        size={120}
-                                        fgColor="#922054"
-                                        bgColor="#FFFFFF"
-                                    />
+                                {/* Body: contact + QR */}
+                                <div className="flex gap-3 px-4 pt-3">
+                                    <div className="flex-1">
+                                        <p className="mb-3 text-[8.5px] font-medium uppercase tracking-[1px] text-[#F472A8]">
+                                            Liên hệ công ty
+                                        </p>
+                                        <div className="space-y-2">
+                                            <InfoRow type="address" text={back.addr} />
+                                            <InfoRow type="phone" text={back.phone} />
+                                            <InfoRow type="email" text={back.email} />
+                                            <InfoRow type="web" text={back.web} />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col items-center gap-1">
+                                        <div className="flex h-[74px] w-[74px] items-center justify-center overflow-hidden rounded-[10px] border border-[#FFD6E7] bg-white p-1">
+                                            <QRCode
+                                                value={`EMPLOYEE:${emp.employeeCode}|${emp.fullName}`}
+                                                size={66}
+                                                style={{ height: "66px", width: "66px" }}
+                                                fgColor="#922054"
+                                                bgColor="#FFFFFF"
+                                            />
+                                        </div>
+                                        <span className="text-[7.5px] uppercase tracking-[0.8px] text-[#F472A8]">
+                                            ID NV
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-r from-[#A8305C] to-[#E8607A]" />
