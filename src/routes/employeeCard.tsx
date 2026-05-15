@@ -120,54 +120,92 @@ function EmployeeCardPage() {
 
     const exportAllEmployeeCards = async () => {
         if (!employees.length) return;
+        setBulkBusy(true);
+        try {
+            const { toPng } = await import("html-to-image");
 
-        const pdf = new jsPDF({
-            orientation: "landscape",
-            unit: "mm",
-            format: [85.6, 54],
-        });
+            // Capture all front + back canvases first
+            const pairs: { name: string; frontPng: string; backPng: string }[] = [];
+            for (const emp of employees) {
+                const frontEl = document.getElementById(`export-front-${emp._id}`) as HTMLElement;
+                const backEl = document.getElementById(`export-back-${emp._id}`) as HTMLElement;
+                if (!frontEl || !backEl) continue;
 
-        const { toPng } = await import("html-to-image");
-
-        for (let i = 0; i < employees.length; i++) {
-            const emp = employees[i];
-
-            const frontEl = document.getElementById(
-                `export-front-${emp._id}`
-            ) as HTMLElement;
-
-            const backEl = document.getElementById(
-                `export-back-${emp._id}`
-            ) as HTMLElement;
-
-            if (!frontEl || !backEl) continue;
-
-            // ===== FRONT =====
-            const frontImg = await toPng(frontEl, {
-                pixelRatio: 3,
-                backgroundColor: "#FFFAF8",
-            });
-
-            if (i !== 0) {
-                pdf.addPage([85.6, 54], "landscape");
+                const frontPng = await toPng(frontEl, { pixelRatio: 3, backgroundColor: "#FFFAF8" });
+                const backPng = await toPng(backEl, { pixelRatio: 3, backgroundColor: "#FFFAF8" });
+                const safe = String(emp.fullName || emp.employeeCode || "nv").replace(/[^\p{L}\p{N}_-]+/gu, "_");
+                pairs.push({ name: safe, frontPng, backPng });
             }
 
-            pdf.addImage(frontImg, "PNG", 0, 0, 85.6, 54);
-
-            // ===== BACK =====
-            const backImgRaw = await toPng(backEl, {
-                pixelRatio: 3,
-                backgroundColor: "#FFFAF8",
-            });
-
-            const backImg = await mirrorImage(backImgRaw);
-
-            pdf.addPage([85.6, 54], "landscape");
-
-            pdf.addImage(backImg, "PNG", 0, 0, 85.6, 54);
+            if (bulkFormat === "pdf") {
+                // 2 mặt: mỗi nhân viên 2 trang (mặt trước + mặt sau, mặt sau lật ngang để khi in 2 mặt sẽ khớp)
+                const pdf = new jsPDF({
+                    orientation: "landscape",
+                    unit: "mm",
+                    format: [85.6, 54],
+                });
+                for (let i = 0; i < pairs.length; i++) {
+                    const { frontPng, backPng } = pairs[i];
+                    if (i !== 0) pdf.addPage([85.6, 54], "landscape");
+                    pdf.addImage(frontPng, "PNG", 0, 0, 85.6, 54);
+                    pdf.addPage([85.6, 54], "landscape");
+                    const mirroredBack = await mirrorImage(backPng);
+                    pdf.addImage(mirroredBack, "PNG", 0, 0, 85.6, 54);
+                }
+                pdf.save("tat-ca-the-nhan-vien.pdf");
+            } else if (bulkFormat === "png-zip") {
+                const { default: JSZip } = await import("jszip");
+                const zip = new JSZip();
+                for (const p of pairs) {
+                    zip.file(`${p.name}_mat-truoc.png`, p.frontPng.split(",")[1], { base64: true });
+                    zip.file(`${p.name}_mat-sau.png`, p.backPng.split(",")[1], { base64: true });
+                }
+                const blob = await zip.generateAsync({ type: "blob" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "tat-ca-the-nhan-vien.zip";
+                a.click();
+                URL.revokeObjectURL(url);
+            } else {
+                // png-sheet: lưới 2 cột (mặt trước | mặt sau) cho mỗi nhân viên
+                const loadImg = (src: string) =>
+                    new Promise<HTMLImageElement>((resolve) => {
+                        const img = new Image();
+                        img.onload = () => resolve(img);
+                        img.src = src;
+                    });
+                const imgs = await Promise.all(
+                    pairs.flatMap((p) => [loadImg(p.frontPng), loadImg(p.backPng)])
+                );
+                const cardW = imgs[0].width;
+                const cardH = imgs[0].height;
+                const gap = 24;
+                const cols = 2;
+                const rows = pairs.length;
+                const sheetW = cols * cardW + (cols + 1) * gap;
+                const sheetH = rows * cardH + (rows + 1) * gap;
+                const sheet = document.createElement("canvas");
+                sheet.width = sheetW;
+                sheet.height = sheetH;
+                const ctx = sheet.getContext("2d")!;
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0, 0, sheetW, sheetH);
+                for (let i = 0; i < pairs.length; i++) {
+                    const front = imgs[i * 2];
+                    const back = imgs[i * 2 + 1];
+                    const y = gap + i * (cardH + gap);
+                    ctx.drawImage(front, gap, y);
+                    ctx.drawImage(back, gap * 2 + cardW, y);
+                }
+                const a = document.createElement("a");
+                a.download = "tat-ca-the-nhan-vien.png";
+                a.href = sheet.toDataURL("image/png");
+                a.click();
+            }
+        } finally {
+            setBulkBusy(false);
         }
-
-        pdf.save("tat-ca-the-nhan-vien.pdf");
     };
 
     const initials = useMemo(() => {
