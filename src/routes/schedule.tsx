@@ -88,12 +88,8 @@ function SchedulePage() {
   const [searchInput, setSearchInput] = useState("");
   const [searchError, setSearchError] = useState<string | null>(null);
 
-  
   const [exporting, setExporting] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
-  const cardsRef = useRef<HTMLDivElement>(null);
-  const [cardDialogOpen, setCardDialogOpen] = useState(false);
-  const [cardFormat, setCardFormat] = useState<"pdf" | "png-zip" | "png-sheet">("pdf");
 
   const coloredShifts = useMemo(() => {
     return state.shifts.map((s, i) => {
