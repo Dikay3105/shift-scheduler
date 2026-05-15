@@ -275,9 +275,6 @@ function SchedulePage() {
             <Button size="sm" className="bg-white/15 text-white hover:bg-white/25 border border-white/20" onClick={() => setConfirmClear(true)}>
               <Trash2 className="mr-1.5 h-4 w-4" /> Xóa tuần
             </Button>
-            <Button size="sm" className="bg-white/15 text-white hover:bg-white/25 border border-white/20" onClick={() => setCardDialogOpen(true)}>
-              <IdCard className="mr-1.5 h-4 w-4" /> Tải thẻ NV
-            </Button>
             <div className="ml-auto flex items-center gap-2">
               <Button size="sm" onClick={exportExcel} disabled={exporting} className="bg-emerald-500 text-white hover:bg-emerald-600 shadow-md">
                 <FileSpreadsheet className="mr-1.5 h-4 w-4" /> Excel
