@@ -470,69 +470,6 @@ function SchedulePage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* CARD DOWNLOAD DIALOG */}
-      <Dialog open={cardDialogOpen} onOpenChange={setCardDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Tải thẻ nhân viên</DialogTitle>
-            <DialogDescription>
-              Xuất thẻ cho {state.employees.length} nhân viên. Chọn định dạng bên dưới.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-1 gap-2">
-            {([
-              { v: "pdf", t: "PDF (gộp nhiều trang)", d: "Tất cả thẻ trong 1 file PDF, tiện in." },
-              { v: "png-zip", t: "ZIP nhiều ảnh PNG", d: "Mỗi nhân viên 1 file PNG riêng." },
-              { v: "png-sheet", t: "1 ảnh PNG tổng hợp", d: "Tất cả thẻ trên 1 ảnh dạng lưới." },
-            ] as const).map((o) => (
-              <button
-                key={o.v}
-                onClick={() => setCardFormat(o.v)}
-                className={`text-left rounded-xl border-2 p-3 transition ${
-                  cardFormat === o.v
-                    ? "border-indigo-500 bg-indigo-50"
-                    : "border-border hover:border-indigo-300"
-                }`}
-              >
-                <div className="text-sm font-semibold">{o.t}</div>
-                <div className="text-xs text-muted-foreground">{o.d}</div>
-              </button>
-            ))}
-          </div>
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setCardDialogOpen(false)}>Hủy</Button>
-            <Button
-              onClick={exportEmployeeCards}
-              disabled={exporting || state.employees.length === 0}
-              className="bg-gradient-to-r from-rose-500 to-pink-600 text-white"
-            >
-              {exporting ? "Đang xuất..." : "Tải xuống"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* HIDDEN CARDS FOR EXPORT */}
-      <div
-        ref={cardsRef}
-        aria-hidden
-        style={{
-          position: "fixed",
-          left: -10000,
-          top: 0,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 16,
-          padding: 16,
-          background: "#ffffff",
-        }}
-      >
-        {state.employees.map((emp, i) => (
-          <div key={emp.id} data-card>
-            <EmployeeCardPrintable employee={emp} index={i} />
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
