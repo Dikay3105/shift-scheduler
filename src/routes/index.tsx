@@ -25,13 +25,13 @@ function AdminDashboard() {
             link: "/schedule",
             gradient: "from-blue-500 to-cyan-500",
         },
-        {
-            title: "Nhân Viên",
-            description: "Quản lý thông tin nhân viên",
-            icon: Users,
-            link: "/admin/employees",
-            gradient: "from-emerald-500 to-green-500",
-        },
+        // {
+        //     title: "Nhân Viên",
+        //     description: "Quản lý thông tin nhân viên",
+        //     icon: Users,
+        //     link: "/admin/employees",
+        //     gradient: "from-emerald-500 to-green-500",
+        // },
         {
             title: "Thẻ Nhân Viên",
             description: "Thiết kế và quản lý thẻ nhân viên",
