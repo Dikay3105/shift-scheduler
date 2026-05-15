@@ -9,6 +9,7 @@ import {
     UserCog,
     Image,
     ArrowRight,
+    Package2
 } from "lucide-react";
 import AdminHeader from "@/components/AdminHeader";
 
@@ -32,6 +33,14 @@ function AdminDashboard() {
         //     link: "/admin/employees",
         //     gradient: "from-emerald-500 to-green-500",
         // },
+        {
+            title: "Quản Lý Kho",
+            description: "Quản lý nhập xuất tồn kho theo ngày",
+            icon: Package2,
+            link: "https://inventorymanagement.dikay3105.workers.dev/",
+            gradient: "from-indigo-500 to-blue-500",
+            external: true,
+        },
         {
             title: "Thẻ Nhân Viên",
             description: "Thiết kế và quản lý thẻ nhân viên",
@@ -72,39 +81,50 @@ function AdminDashboard() {
                     {adminMenuItems.map((item, index) => {
                         const IconComponent = item.icon;
 
-                        return (
-                            <Link key={index} to={item.link}>
-                                <Card className="group h-full overflow-hidden border-0 bg-background shadow-md transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
-                                    <CardContent className="p-0">
+                        const cardContent = (
+                            <Card className="group h-full overflow-hidden border-0 bg-background shadow-md transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
+                                <CardContent className="p-0">
+                                    <div
+                                        className={`h-2 bg-gradient-to-r ${item.gradient}`}
+                                    />
+
+                                    <div className="p-6">
                                         <div
-                                            className={`h-2 bg-gradient-to-r ${item.gradient}`}
-                                        />
-
-                                        <div className="p-6">
-                                            <div
-                                                className={`mb-6 inline-flex rounded-2xl bg-gradient-to-r p-4 text-white shadow-lg ${item.gradient}`}
-                                            >
-                                                <IconComponent className="h-7 w-7" />
-                                            </div>
-
-                                            <h4 className="mb-2 text-xl font-semibold">
-                                                {item.title}
-                                            </h4>
-
-                                            <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
-                                                {item.description}
-                                            </p>
-
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm font-medium">
-                                                    Truy cập
-                                                </span>
-
-                                                <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-                                            </div>
+                                            className={`mb-6 inline-flex rounded-2xl bg-gradient-to-r p-4 text-white shadow-lg ${item.gradient}`}
+                                        >
+                                            <IconComponent className="h-7 w-7" />
                                         </div>
-                                    </CardContent>
-                                </Card>
+
+                                        <h4 className="mb-2 text-xl font-semibold">
+                                            {item.title}
+                                        </h4>
+
+                                        <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
+                                            {item.description}
+                                        </p>
+
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-medium">
+                                                Truy cập
+                                            </span>
+
+                                            <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        );
+
+                        return item.external ? (
+                            <a
+                                key={index}
+                                href={item.link}
+                            >
+                                {cardContent}
+                            </a>
+                        ) : (
+                            <Link key={index} to={item.link}>
+                                {cardContent}
                             </Link>
                         );
                     })}
