@@ -451,7 +451,7 @@ function EmployeeCardPage() {
                             Nhấn vào thẻ để lật
                         </p>
 
-                        <div className="flex gap-2 mt-2">
+                        <div className="flex flex-wrap gap-2 mt-2 justify-center">
                             <button
                                 onClick={() => exportPNG("front")}
                                 className="flex items-center gap-1.5 rounded-lg border border-[#FFD6E7] bg-[#FFF0F5] px-3 py-2 text-[11px] font-medium text-[#922054] transition hover:bg-[#FFD6E7]"
@@ -470,12 +470,39 @@ function EmployeeCardPage() {
                             >
                                 📄 Xuất PDF (2 mặt)
                             </button>
+                        </div>
 
+                        {/* BULK EXPORT */}
+                        <div className="mt-4 w-full max-w-[420px] rounded-2xl border-2 border-[#FFD6E7] bg-gradient-to-br from-[#FFF0F5] to-white p-4">
+                            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[1px] text-[#922054]">
+                                📦 Tải tất cả thẻ ({employees.length} nhân viên)
+                            </p>
+                            <div className="grid grid-cols-1 gap-2 mb-3">
+                                {([
+                                    { v: "pdf", t: "PDF 2 mặt", d: "Mỗi NV 2 trang (trước + sau lật ngang), in 2 mặt." },
+                                    { v: "png-zip", t: "ZIP nhiều ảnh PNG", d: "Mỗi NV 2 file PNG (trước/sau) trong 1 file ZIP." },
+                                    { v: "png-sheet", t: "1 ảnh PNG tổng hợp", d: "Tất cả thẻ trên 1 ảnh dạng lưới 2 cột." },
+                                ] as const).map((o) => (
+                                    <button
+                                        key={o.v}
+                                        onClick={() => setBulkFormat(o.v)}
+                                        className={`text-left rounded-lg border-2 p-2.5 transition ${
+                                            bulkFormat === o.v
+                                                ? "border-[#E0528A] bg-[#FFD6E7]/40"
+                                                : "border-[#FFD6E7] bg-white hover:border-[#F472A8]"
+                                        }`}
+                                    >
+                                        <div className="text-[12px] font-semibold text-[#4A0F2A]">{o.t}</div>
+                                        <div className="text-[10px] text-[#922054]/70">{o.d}</div>
+                                    </button>
+                                ))}
+                            </div>
                             <button
                                 onClick={exportAllEmployeeCards}
-                                className="flex items-center gap-1.5 rounded-lg bg-black px-3 py-2 text-[11px] font-medium text-white transition hover:opacity-90"
+                                disabled={bulkBusy || employees.length === 0}
+                                className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[#E8607A] to-[#A8305C] px-3 py-2.5 text-[12px] font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
                             >
-                                📦 Xuất tất cả nhân viên
+                                {bulkBusy ? "Đang xuất..." : "📥 Tải xuống tất cả"}
                             </button>
                         </div>
                     </div>
