@@ -15,6 +15,8 @@ function EmployeeCardPage() {
     const frontRef = useRef<HTMLDivElement>(null);
     const backRef = useRef<HTMLDivElement>(null);
     const [employees, setEmployees] = useState<any[]>([]);
+    const [bulkFormat, setBulkFormat] = useState<"pdf" | "png-zip" | "png-sheet">("pdf");
+    const [bulkBusy, setBulkBusy] = useState(false);
 
     const [front, setFront] = useState({
         name: "Nguyễn Văn A",
@@ -118,54 +120,92 @@ function EmployeeCardPage() {
 
     const exportAllEmployeeCards = async () => {
         if (!employees.length) return;
+        setBulkBusy(true);
+        try {
+            const { toPng } = await import("html-to-image");
 
-        const pdf = new jsPDF({
-            orientation: "landscape",
-            unit: "mm",
-            format: [85.6, 54],
-        });
+            // Capture all front + back canvases first
+            const pairs: { name: string; frontPng: string; backPng: string }[] = [];
+            for (const emp of employees) {
+                const frontEl = document.getElementById(`export-front-${emp._id}`) as HTMLElement;
+                const backEl = document.getElementById(`export-back-${emp._id}`) as HTMLElement;
+                if (!frontEl || !backEl) continue;
 
-        const { toPng } = await import("html-to-image");
-
-        for (let i = 0; i < employees.length; i++) {
-            const emp = employees[i];
-
-            const frontEl = document.getElementById(
-                `export-front-${emp._id}`
-            ) as HTMLElement;
-
-            const backEl = document.getElementById(
-                `export-back-${emp._id}`
-            ) as HTMLElement;
-
-            if (!frontEl || !backEl) continue;
-
-            // ===== FRONT =====
-            const frontImg = await toPng(frontEl, {
-                pixelRatio: 3,
-                backgroundColor: "#FFFAF8",
-            });
-
-            if (i !== 0) {
-                pdf.addPage([85.6, 54], "landscape");
+                const frontPng = await toPng(frontEl, { pixelRatio: 3, backgroundColor: "#FFFAF8" });
+                const backPng = await toPng(backEl, { pixelRatio: 3, backgroundColor: "#FFFAF8" });
+                const safe = String(emp.fullName || emp.employeeCode || "nv").replace(/[^\p{L}\p{N}_-]+/gu, "_");
+                pairs.push({ name: safe, frontPng, backPng });
             }
 
-            pdf.addImage(frontImg, "PNG", 0, 0, 85.6, 54);
-
-            // ===== BACK =====
-            const backImgRaw = await toPng(backEl, {
-                pixelRatio: 3,
-                backgroundColor: "#FFFAF8",
-            });
-
-            const backImg = await mirrorImage(backImgRaw);
-
-            pdf.addPage([85.6, 54], "landscape");
-
-            pdf.addImage(backImg, "PNG", 0, 0, 85.6, 54);
+            if (bulkFormat === "pdf") {
+                // 2 mặt: mỗi nhân viên 2 trang (mặt trước + mặt sau, mặt sau lật ngang để khi in 2 mặt sẽ khớp)
+                const pdf = new jsPDF({
+                    orientation: "landscape",
+                    unit: "mm",
+                    format: [85.6, 54],
+                });
+                for (let i = 0; i < pairs.length; i++) {
+                    const { frontPng, backPng } = pairs[i];
+                    if (i !== 0) pdf.addPage([85.6, 54], "landscape");
+                    pdf.addImage(frontPng, "PNG", 0, 0, 85.6, 54);
+                    pdf.addPage([85.6, 54], "landscape");
+                    const mirroredBack = await mirrorImage(backPng);
+                    pdf.addImage(mirroredBack, "PNG", 0, 0, 85.6, 54);
+                }
+                pdf.save("tat-ca-the-nhan-vien.pdf");
+            } else if (bulkFormat === "png-zip") {
+                const { default: JSZip } = await import("jszip");
+                const zip = new JSZip();
+                for (const p of pairs) {
+                    zip.file(`${p.name}_mat-truoc.png`, p.frontPng.split(",")[1], { base64: true });
+                    zip.file(`${p.name}_mat-sau.png`, p.backPng.split(",")[1], { base64: true });
+                }
+                const blob = await zip.generateAsync({ type: "blob" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "tat-ca-the-nhan-vien.zip";
+                a.click();
+                URL.revokeObjectURL(url);
+            } else {
+                // png-sheet: lưới 2 cột (mặt trước | mặt sau) cho mỗi nhân viên
+                const loadImg = (src: string) =>
+                    new Promise<HTMLImageElement>((resolve) => {
+                        const img = new Image();
+                        img.onload = () => resolve(img);
+                        img.src = src;
+                    });
+                const imgs = await Promise.all(
+                    pairs.flatMap((p) => [loadImg(p.frontPng), loadImg(p.backPng)])
+                );
+                const cardW = imgs[0].width;
+                const cardH = imgs[0].height;
+                const gap = 24;
+                const cols = 2;
+                const rows = pairs.length;
+                const sheetW = cols * cardW + (cols + 1) * gap;
+                const sheetH = rows * cardH + (rows + 1) * gap;
+                const sheet = document.createElement("canvas");
+                sheet.width = sheetW;
+                sheet.height = sheetH;
+                const ctx = sheet.getContext("2d")!;
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0, 0, sheetW, sheetH);
+                for (let i = 0; i < pairs.length; i++) {
+                    const front = imgs[i * 2];
+                    const back = imgs[i * 2 + 1];
+                    const y = gap + i * (cardH + gap);
+                    ctx.drawImage(front, gap, y);
+                    ctx.drawImage(back, gap * 2 + cardW, y);
+                }
+                const a = document.createElement("a");
+                a.download = "tat-ca-the-nhan-vien.png";
+                a.href = sheet.toDataURL("image/png");
+                a.click();
+            }
+        } finally {
+            setBulkBusy(false);
         }
-
-        pdf.save("tat-ca-the-nhan-vien.pdf");
     };
 
     const initials = useMemo(() => {
@@ -411,7 +451,7 @@ function EmployeeCardPage() {
                             Nhấn vào thẻ để lật
                         </p>
 
-                        <div className="flex gap-2 mt-2">
+                        <div className="flex flex-wrap gap-2 mt-2 justify-center">
                             <button
                                 onClick={() => exportPNG("front")}
                                 className="flex items-center gap-1.5 rounded-lg border border-[#FFD6E7] bg-[#FFF0F5] px-3 py-2 text-[11px] font-medium text-[#922054] transition hover:bg-[#FFD6E7]"
@@ -430,12 +470,39 @@ function EmployeeCardPage() {
                             >
                                 📄 Xuất PDF (2 mặt)
                             </button>
+                        </div>
 
+                        {/* BULK EXPORT */}
+                        <div className="mt-4 w-full max-w-[420px] rounded-2xl border-2 border-[#FFD6E7] bg-gradient-to-br from-[#FFF0F5] to-white p-4">
+                            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[1px] text-[#922054]">
+                                📦 Tải tất cả thẻ ({employees.length} nhân viên)
+                            </p>
+                            <div className="grid grid-cols-1 gap-2 mb-3">
+                                {([
+                                    { v: "pdf", t: "PDF 2 mặt", d: "Mỗi NV 2 trang (trước + sau lật ngang), in 2 mặt." },
+                                    { v: "png-zip", t: "ZIP nhiều ảnh PNG", d: "Mỗi NV 2 file PNG (trước/sau) trong 1 file ZIP." },
+                                    { v: "png-sheet", t: "1 ảnh PNG tổng hợp", d: "Tất cả thẻ trên 1 ảnh dạng lưới 2 cột." },
+                                ] as const).map((o) => (
+                                    <button
+                                        key={o.v}
+                                        onClick={() => setBulkFormat(o.v)}
+                                        className={`text-left rounded-lg border-2 p-2.5 transition ${
+                                            bulkFormat === o.v
+                                                ? "border-[#E0528A] bg-[#FFD6E7]/40"
+                                                : "border-[#FFD6E7] bg-white hover:border-[#F472A8]"
+                                        }`}
+                                    >
+                                        <div className="text-[12px] font-semibold text-[#4A0F2A]">{o.t}</div>
+                                        <div className="text-[10px] text-[#922054]/70">{o.d}</div>
+                                    </button>
+                                ))}
+                            </div>
                             <button
                                 onClick={exportAllEmployeeCards}
-                                className="flex items-center gap-1.5 rounded-lg bg-black px-3 py-2 text-[11px] font-medium text-white transition hover:opacity-90"
+                                disabled={bulkBusy || employees.length === 0}
+                                className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[#E8607A] to-[#A8305C] px-3 py-2.5 text-[12px] font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
                             >
-                                📦 Xuất tất cả nhân viên
+                                {bulkBusy ? "Đang xuất..." : "📥 Tải xuống tất cả"}
                             </button>
                         </div>
                     </div>
@@ -606,22 +673,47 @@ function EmployeeCardPage() {
                                 </div>
                             </div>
 
-                            {/* BACK */}
+                            {/* BACK - matching displayed mock */}
                             <div
                                 id={`export-back-${emp._id}`}
                                 className="relative mt-4 h-[230px] w-[350px] overflow-hidden rounded-[18px] border border-[#FFADD0] bg-[#FFFAF8]"
                             >
-                                <div className="flex h-9 items-center justify-center bg-gradient-to-r from-[#E8607A] to-[#A8305C] text-[12px] font-semibold uppercase tracking-[3px] text-white">
-                                    Cinnamon Forest
+                                {/* Header */}
+                                <div className="flex h-9 items-center justify-center gap-2 bg-gradient-to-r from-[#E8607A] to-[#A8305C]">
+                                    <span className="text-white text-[14px]">✦</span>
+                                    <span className="font-serif text-[12px] font-semibold uppercase tracking-[3px] text-white">
+                                        Cinnamon Forest
+                                    </span>
                                 </div>
 
-                                <div className="flex h-[170px] items-center justify-center">
-                                    <QRCode
-                                        value={`EMPLOYEE:${emp.employeeCode}`}
-                                        size={120}
-                                        fgColor="#922054"
-                                        bgColor="#FFFFFF"
-                                    />
+                                {/* Body: contact + QR */}
+                                <div className="flex gap-3 px-4 pt-3">
+                                    <div className="flex-1">
+                                        <p className="mb-3 text-[8.5px] font-medium uppercase tracking-[1px] text-[#F472A8]">
+                                            Liên hệ công ty
+                                        </p>
+                                        <div className="space-y-2">
+                                            <InfoRow type="address" text={back.addr} />
+                                            <InfoRow type="phone" text={back.phone} />
+                                            <InfoRow type="email" text={back.email} />
+                                            <InfoRow type="web" text={back.web} />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col items-center gap-1">
+                                        <div className="flex h-[74px] w-[74px] items-center justify-center overflow-hidden rounded-[10px] border border-[#FFD6E7] bg-white p-1">
+                                            <QRCode
+                                                value={`EMPLOYEE:${emp.employeeCode}|${emp.fullName}`}
+                                                size={66}
+                                                style={{ height: "66px", width: "66px" }}
+                                                fgColor="#922054"
+                                                bgColor="#FFFFFF"
+                                            />
+                                        </div>
+                                        <span className="text-[7.5px] uppercase tracking-[0.8px] text-[#F472A8]">
+                                            ID NV
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-r from-[#A8305C] to-[#E8607A]" />
