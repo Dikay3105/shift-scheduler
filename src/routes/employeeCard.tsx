@@ -15,6 +15,8 @@ function EmployeeCardPage() {
     const frontRef = useRef<HTMLDivElement>(null);
     const backRef = useRef<HTMLDivElement>(null);
     const [employees, setEmployees] = useState<any[]>([]);
+    const [bulkFormat, setBulkFormat] = useState<"pdf" | "png-zip" | "png-sheet">("pdf");
+    const [bulkBusy, setBulkBusy] = useState(false);
 
     const [front, setFront] = useState({
         name: "Nguyễn Văn A",
