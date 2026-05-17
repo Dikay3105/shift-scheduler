@@ -169,32 +169,43 @@ export function ShiftPickerModal({
                           disabled={isLoading}
                           onClick={() => handleSelect(s.id)}
                           className={`
-                    relative rounded-2xl border px-3 py-3 text-center
+                    relative rounded-2xl border-2 px-3 py-3 text-center
                     transition-all duration-200
                     ${selected
-                              ? "scale-[1.02] border-transparent shadow-lg ring-2 ring-offset-2 ring-slate-900/20"
-                              : "border-transparent hover:scale-[1.02] hover:shadow-md"
+                              ? "scale-[1.05] shadow-xl ring-2 ring-offset-4"
+                              : "border-transparent hover:scale-[1.03] hover:shadow-md"
                             }
                   `}
                           style={{
                             background: s.bg,
                             color: s.fg,
-                            boxShadow: selected ? `0 8px 20px ${s.bg}` : undefined,
+                            borderColor: selected ? s.fg : "transparent",
+                            boxShadow: selected ? `0 12px 28px ${s.bg}` : undefined,
+                            ...(selected ? { ringColor: s.fg } : {}),
                           }}
                         >
-                          <div
-                            className="text-[18px] font-black tracking-wide"
-                            style={{ color: s.fg }}
-                          >
+                          {selected && (
+                            <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-md">
+                              <Check className="w-4 h-4" style={{ color: s.fg }} />
+                            </span>
+                          )}
+
+                          <div className="text-[18px] font-black tracking-wide">
                             {s.code}
                           </div>
 
-                          <div
-                            className="mt-1 text-[12px] font-semibold opacity-80"
-                            style={{ color: s.fg }}
-                          >
+                          <div className="mt-1 text-[12px] font-semibold opacity-80">
                             {s.start}–{s.end}
                           </div>
+
+                          {selected && (
+                            <div
+                              className="mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-white/80"
+                              style={{ color: s.fg }}
+                            >
+                              Đã chọn
+                            </div>
+                          )}
                         </button>
                       );
                     })}
