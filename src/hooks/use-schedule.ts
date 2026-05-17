@@ -154,15 +154,21 @@ export function useSchedule() {
 
   const updateShift = useCallback(
     async (id: string, patch: Partial<Shift>) => {
-      await scheduleApi.updateShift(id, {
-        shiftCode: patch.code,
-        shiftName: "",
-        startTime: patch.start,
-        endTime: patch.end,
-        color: patch.bg,
-      });
+      try {
+        await scheduleApi.updateShift(id, {
+          shiftCode: patch.code,
+          startTime: patch.start,
+          endTime: patch.end,
+          color: patch.bg,
+          session: patch.session,           // ← Thêm session
+          // isActive: patch.isActive,      // Nếu cần cập nhật trạng thái active
+        });
 
-      await fetchAllData();
+        await fetchAllData();
+      } catch (error) {
+        console.error("Lỗi khi cập nhật ca:", error);
+        // TODO: Thêm thông báo lỗi (toast)
+      }
     },
     [fetchAllData]
   );

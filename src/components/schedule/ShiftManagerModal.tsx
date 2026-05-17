@@ -16,10 +16,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Plus, CheckCircle, Loader2 } from "lucide-react";
+import { Trash2, Plus, Loader2 } from "lucide-react";
 import type { Shift, ShiftGroup } from "@/lib/schedule-types";
 import { getShiftColor } from "@/lib/shift-colors";
 import { scheduleApi } from "@/services/api";
+
+// Session từ DB: morning | afternoon | night
+type ShiftSession = "morning" | "afternoon" | "night";
+
+// Map session DB → ShiftGroup FE (để nhóm hiển thị)
+const SESSION_TO_GROUP: Record<ShiftSession, ShiftGroup> = {
+  morning: "sang",
+  afternoon: "chieu",
+  night: "toi",
+};
+
+const GROUP_TO_SESSION: Record<ShiftGroup, ShiftSession> = {
+  sang: "morning",
+  chieu: "afternoon",
+  toi: "night",
+};
 
 const GROUP_LABELS: Record<ShiftGroup, string> = {
   sang: "Sáng",
@@ -27,26 +43,35 @@ const GROUP_LABELS: Record<ShiftGroup, string> = {
   toi: "Tối",
 };
 
-// Nhiều màu pastel hơn
-const GROUP_PRESETS: Record<ShiftGroup, { bg: string; fg: string }> = {
-  sang: { bg: "#dbeafe", fg: "#1e40af" },     // Xanh dương nhạt
-  chieu: { bg: "#fef3c7", fg: "#854d0e" },   // Vàng nhạt
-  toi: { bg: "#ede9fe", fg: "#4c1d95" },     // Tím nhạt
+const SESSION_LABELS: Record<ShiftSession, string> = {
+  morning: "Sáng",
+  afternoon: "Chiều",
+  night: "Tối",
 };
 
-// Màu dự phòng cho nhiều ca
+const GROUP_PRESETS: Record<ShiftGroup, { bg: string; fg: string }> = {
+  sang: { bg: "#dbeafe", fg: "#1e40af" },
+  chieu: { bg: "#fef3c7", fg: "#854d0e" },
+  toi: { bg: "#ede9fe", fg: "#4c1d95" },
+};
+
 const EXTRA_COLORS = [
-  { bg: "#bfdbfe", fg: "#1e3a8a" },   // Xanh dương đậm hơn
-  { bg: "#bae6fd", fg: "#0e7490" },   // Xanh cyan
+  { bg: "#bfdbfe", fg: "#1e3a8a" },
+  { bg: "#bae6fd", fg: "#0e7490" },
   { bg: "#a5f3fc", fg: "#164e63" },
-  { bg: "#fde68c", fg: "#78350f" },   // Vàng cam
+  { bg: "#fde68c", fg: "#78350f" },
   { bg: "#fcd34d", fg: "#713f12" },
-  { bg: "#fed7aa", fg: "#9a3412" },   // Cam đào
-  { bg: "#d1fae5", fg: "#14532d" },   // Xanh mint
-  { bg: "#ddd6fe", fg: "#4338ca" },   // Tím nhạt
-  { bg: "#c4b5fd", fg: "#3730a3" },   // Tím đậm
-  { bg: "#fce7f3", fg: "#831843" },   // Hồng
+  { bg: "#fed7aa", fg: "#9a3412" },
+  { bg: "#d1fae5", fg: "#14532d" },
+  { bg: "#ddd6fe", fg: "#4338ca" },
+  { bg: "#c4b5fd", fg: "#3730a3" },
+  { bg: "#fce7f3", fg: "#831843" },
 ];
+
+// Extend Shift để mang thêm session từ DB
+interface ShiftWithSession extends Shift {
+  session: ShiftSession;
+}
 
 export function ShiftManagerModal({
   open,
@@ -57,39 +82,52 @@ export function ShiftManagerModal({
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  onAdd: (s: Omit<Shift, "id">) => void;
-  onUpdate: (id: string, patch: Partial<Shift>) => void;
+  onAdd: (s: Omit<Shift, "id"> & { session: ShiftSession }) => void;
+  onUpdate: (id: string, patch: Partial<Shift> & { session?: ShiftSession }) => void;
   onDelete: (id: string) => void;
 }) {
-  const [shifts, setShifts] = useState<Shift[]>([]);
-  const [draft, setDraft] = useState<Omit<Shift, "id">>({
+  const [shifts, setShifts] = useState<ShiftWithSession[]>([]);
+  const [draft, setDraft] = useState<Omit<ShiftWithSession, "id">>({
     code: "",
     label: "",
     start: "08:00",
     end: "12:00",
     group: "sang",
+    session: "morning",
     bg: GROUP_PRESETS.sang.bg,
     fg: GROUP_PRESETS.sang.fg,
   });
 
-  const [justAdded, setJustAdded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [colorIndex, setColorIndex] = useState(0);
 
   const groups: ShiftGroup[] = ["sang", "chieu", "toi"];
+  const sessions: ShiftSession[] = ["morning", "afternoon", "night"];
 
   useEffect(() => {
     if (open) loadShifts();
   }, [open]);
 
+  // Tự động cập nhật mã ca: lấy số lớn nhất trong danh sách rồi +1
+  useEffect(() => {
+    const maxNum = shifts.reduce((max, s) => {
+      const match = s.code.match(/^Ca(\d+)$/i);
+      const num = match ? parseInt(match[1]) : 0;
+      return Math.max(max, num);
+    }, 0);
+    setDraft((prev) => ({ ...prev, code: `Ca${maxNum + 1}` }));
+  }, [shifts]);
+
   const loadShifts = async () => {
     try {
-      setIsLoading(true);
+      // setIsLoading(true);
       const response = await scheduleApi.getShifts();
       const shiftsApi = response.data || [];
 
-      const formattedShifts: Shift[] = shiftsApi.map((s: any, index: number) => {
-        const group = getGroupFromTime(s.startTime);
+      const formattedShifts: ShiftWithSession[] = shiftsApi.map((s: any, index: number) => {
+        // Lấy session trực tiếp từ DB (morning | afternoon | night)
+        const session: ShiftSession = s.session ?? "morning";
+        const group: ShiftGroup = SESSION_TO_GROUP[session];
         const color = getShiftColor(index);
 
         return {
@@ -98,6 +136,7 @@ export function ShiftManagerModal({
           label: "",
           start: s.startTime,
           end: s.endTime,
+          session,
           group,
           bg: color.bg,
           fg: color.fg,
@@ -108,15 +147,30 @@ export function ShiftManagerModal({
     } catch (error) {
       console.error("Lỗi tải ca:", error);
     } finally {
-      setIsLoading(false);
+      // setIsLoading(false);
     }
   };
 
-  const getGroupFromTime = (startTime: string): ShiftGroup => {
-    const hour = parseInt(startTime.split(":")[0]);
-    if (hour >= 18) return "toi";
-    if (hour >= 12) return "chieu";
-    return "sang";
+  // Cập nhật local state ngay lập tức để UI phản hồi nhanh
+  const handleUpdateField = (
+    id: string,
+    patch: Partial<ShiftWithSession>
+  ) => {
+    // Nếu đổi session thì đồng bộ group
+    if (patch.session) {
+      patch.group = SESSION_TO_GROUP[patch.session];
+    }
+    // Nếu đổi group thì đồng bộ session
+    if (patch.group && !patch.session) {
+      patch.session = GROUP_TO_SESSION[patch.group];
+    }
+
+    setShifts((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, ...patch } : s))
+    );
+
+    // Gửi lên API
+    onUpdate(id, patch);
   };
 
   const handleAdd = async () => {
@@ -129,7 +183,6 @@ export function ShiftManagerModal({
       return;
     }
 
-    const preset = GROUP_PRESETS[draft.group];
     const extra = EXTRA_COLORS[colorIndex % EXTRA_COLORS.length];
 
     await onAdd({
@@ -138,25 +191,25 @@ export function ShiftManagerModal({
       start: draft.start,
       end: draft.end,
       group: draft.group,
+      session: draft.session,
       bg: extra.bg,
       fg: extra.fg,
     });
 
-    setJustAdded(true);
-    setTimeout(() => setJustAdded(false), 1500);
     setColorIndex((prev) => prev + 1);
+    await loadShifts();
 
-    loadShifts();
-
-    setDraft({
-      code: "",
+    setDraft((prev) => ({
+      ...prev,
+      code: "",   // useEffect sẽ tự điền Ca(n+1) sau khi shifts reload
       label: "",
       start: "08:00",
       end: "12:00",
       group: "sang",
+      session: "morning",
       bg: GROUP_PRESETS.sang.bg,
       fg: GROUP_PRESETS.sang.fg,
-    });
+    }));
   };
 
   return (
@@ -179,7 +232,10 @@ export function ShiftManagerModal({
                 <div key={g}>
                   <div
                     className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded inline-block mb-3"
-                    style={{ background: GROUP_PRESETS[g].bg, color: GROUP_PRESETS[g].fg }}
+                    style={{
+                      background: GROUP_PRESETS[g].bg,
+                      color: GROUP_PRESETS[g].fg,
+                    }}
                   >
                     {GROUP_LABELS[g]}
                   </div>
@@ -194,6 +250,7 @@ export function ShiftManagerModal({
                           borderColor: s.bg,
                         }}
                       >
+                        {/* Mã ca */}
                         <div
                           className="col-span-2 flex items-center justify-center rounded-lg px-2 py-2 font-mono font-black text-base"
                           style={{ background: s.bg, color: s.fg }}
@@ -201,33 +258,72 @@ export function ShiftManagerModal({
                         >
                           {s.code}
                         </div>
-                        <Input
-                          type="time"
-                          value={s.start}
-                          onChange={(e) => onUpdate(s.id, { start: e.target.value })}
-                          className="col-span-2 bg-white/80"
-                        />
-                        <Input
-                          type="time"
-                          value={s.end}
-                          onChange={(e) => onUpdate(s.id, { end: e.target.value })}
-                          className="col-span-2 bg-white/80"
-                        />
 
-                        <div
-                          className="col-span-5 text-sm font-semibold"
-                          style={{ color: s.fg }}
-                        >
-                          {s.start} – {s.end}
+                        {/* Giờ bắt đầu */}
+                        <div className="col-span-2">
+                          <Label className="text-xs text-muted-foreground mb-1 block">
+                            Bắt đầu
+                          </Label>
+                          <Input
+                            type="time"
+                            value={s.start}
+                            onChange={(e) =>
+                              handleUpdateField(s.id, { start: e.target.value })
+                            }
+                            className="bg-white/80"
+                          />
                         </div>
 
+                        {/* Giờ kết thúc */}
+                        <div className="col-span-2">
+                          <Label className="text-xs text-muted-foreground mb-1 block">
+                            Kết thúc
+                          </Label>
+                          <Input
+                            type="time"
+                            value={s.end}
+                            onChange={(e) =>
+                              handleUpdateField(s.id, { end: e.target.value })
+                            }
+                            className="bg-white/80"
+                          />
+                        </div>
+
+                        {/* Dropdown chọn session (sáng/chiều/tối) */}
+                        <div className="col-span-3">
+                          <Label className="text-xs text-muted-foreground mb-1 block">
+                            Buổi
+                          </Label>
+                          <Select
+                            value={s.session}
+                            onValueChange={(v: ShiftSession) =>
+                              handleUpdateField(s.id, { session: v })
+                            }
+                          >
+                            <SelectTrigger className="bg-white/80">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {sessions.map((sess) => (
+                                <SelectItem key={sess} value={sess}>
+                                  {SESSION_LABELS[sess]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Khoảng trống */}
+                        <div className="col-span-2" />
+
+                        {/* Nút xóa */}
                         <Button
                           variant="ghost"
                           size="icon"
                           className="col-span-1 text-destructive"
-                          onClick={() => {
+                          onClick={async () => {
                             onDelete(s.id);
-                            loadShifts();
+                            await loadShifts();
                           }}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -247,49 +343,83 @@ export function ShiftManagerModal({
           )}
         </div>
 
-        {/* Form thêm ca */}
+        {/* Form thêm ca mới */}
         <div className="border-t pt-6">
           <Label className="text-xs uppercase tracking-widest text-muted-foreground mb-3 block">
             Thêm ca mới
           </Label>
 
           <div className="grid grid-cols-12 gap-3 items-end">
+            {/* Mã ca */}
             <div className="col-span-2">
+              <Label className="text-xs text-muted-foreground mb-1 block">
+                Mã ca
+              </Label>
               <Input
-                placeholder="Mã ca (S3)"
+                placeholder="VD: S3"
                 value={draft.code}
-                onChange={(e) => setDraft({ ...draft, code: e.target.value })}
+                onChange={(e) =>
+                  setDraft({ ...draft, code: e.target.value })
+                }
               />
             </div>
 
+            {/* Giờ bắt đầu */}
             <div className="col-span-2">
-              <Input type="time" value={draft.start} onChange={(e) => setDraft({ ...draft, start: e.target.value })} />
+              <Label className="text-xs text-muted-foreground mb-1 block">
+                Bắt đầu
+              </Label>
+              <Input
+                type="time"
+                value={draft.start}
+                onChange={(e) =>
+                  setDraft({ ...draft, start: e.target.value })
+                }
+              />
             </div>
 
+            {/* Giờ kết thúc */}
             <div className="col-span-2">
-              <Input type="time" value={draft.end} onChange={(e) => setDraft({ ...draft, end: e.target.value })} />
+              <Label className="text-xs text-muted-foreground mb-1 block">
+                Kết thúc
+              </Label>
+              <Input
+                type="time"
+                value={draft.end}
+                onChange={(e) => setDraft({ ...draft, end: e.target.value })}
+              />
             </div>
 
+            {/* Dropdown buổi (session) */}
             <div className="col-span-3">
+              <Label className="text-xs text-muted-foreground mb-1 block">
+                Buổi
+              </Label>
               <Select
-                value={draft.group}
-                onValueChange={(v: ShiftGroup) =>
-                  setDraft({ ...draft, group: v, ...GROUP_PRESETS[v] })
+                value={draft.session}
+                onValueChange={(v: ShiftSession) =>
+                  setDraft({
+                    ...draft,
+                    session: v,
+                    group: SESSION_TO_GROUP[v],
+                    ...GROUP_PRESETS[SESSION_TO_GROUP[v]],
+                  })
                 }
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {groups.map((g) => (
-                    <SelectItem key={g} value={g}>
-                      {GROUP_LABELS[g]}
+                  {sessions.map((sess) => (
+                    <SelectItem key={sess} value={sess}>
+                      {SESSION_LABELS[sess]}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
+            {/* Nút thêm */}
             <Button onClick={handleAdd} className="col-span-3" size="default">
               <Plus className="w-4 h-4 mr-2" />
               Thêm ca

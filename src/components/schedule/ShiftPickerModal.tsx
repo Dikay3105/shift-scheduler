@@ -27,6 +27,13 @@ const GROUP_STYLE: Record<ShiftGroup, string> = {
   toi: "bg-purple-100 text-purple-700",
 };
 
+// Lấy group từ session DB thay vì tính từ giờ
+const SESSION_TO_GROUP: Record<string, ShiftGroup> = {
+  morning: "sang",
+  afternoon: "chieu",
+  night: "toi",
+};
+
 type Props = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -63,11 +70,12 @@ export function ShiftPickerModal({
       setIsLoading(true);
 
       const response = await scheduleApi.getShifts();
-
       const shiftsApi = response.data || [];
 
       const formattedShifts: Shift[] = shiftsApi.map((s: any, i: number) => {
-        const group = getGroupFromTime(s.startTime);
+        // Lấy group từ session DB, fallback về "sang" nếu không có
+        const session: string = s.session ?? "morning";
+        const group: ShiftGroup = SESSION_TO_GROUP[session] ?? "sang";
         const color = getShiftColor(i);
 
         return {
@@ -89,16 +97,6 @@ export function ShiftPickerModal({
       setIsLoading(false);
     }
   };
-
-  const getGroupFromTime = (startTime: string): ShiftGroup => {
-    const hour = parseInt(startTime.split(":")[0]);
-
-    if (hour >= 18) return "toi";
-    if (hour >= 12) return "chieu";
-
-    return "sang";
-  };
-
 
   const handleSelect = async (shiftId: string | null) => {
     try {
@@ -144,10 +142,10 @@ export function ShiftPickerModal({
                   {/* GROUP HEADER */}
                   <div
                     className={`
-              mb-3 flex items-center gap-2 rounded-xl px-3 py-2
-              text-[12px] font-bold uppercase tracking-wider
-              ${GROUP_STYLE[g]}
-            `}
+                      mb-3 flex items-center gap-2 rounded-xl px-3 py-2
+                      text-[12px] font-bold uppercase tracking-wider
+                      ${GROUP_STYLE[g]}
+                    `}
                   >
                     <span className="text-sm">
                       {g === "sang" && "☀️"}
@@ -169,13 +167,13 @@ export function ShiftPickerModal({
                           disabled={isLoading}
                           onClick={() => handleSelect(s.id)}
                           className={`
-                    relative rounded-2xl border-2 px-3 py-3 text-center
-                    transition-all duration-200
-                    ${selected
+                            relative rounded-2xl border-2 px-3 py-3 text-center
+                            transition-all duration-200
+                            ${selected
                               ? "scale-[1.05] shadow-xl ring-2 ring-offset-4"
                               : "border-transparent hover:scale-[1.03] hover:shadow-md"
                             }
-                  `}
+                          `}
                           style={{
                             background: s.bg,
                             color: s.fg,
