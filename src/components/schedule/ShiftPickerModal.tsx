@@ -231,7 +231,7 @@ export function ShiftPickerModal({
           )}
         </div>
 
-        <DialogFooter className="flex-row justify-between gap-2 sm:justify-between">
+        <DialogFooter className="flex-row justify-between gap-2 sm:justify-between px-6 pb-6 pt-2 shrink-0 border-t">
           {currentShiftId ? (
             <Button
               variant="destructive"
