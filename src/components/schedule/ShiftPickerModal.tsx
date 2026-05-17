@@ -143,8 +143,8 @@ export function ShiftPickerModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md w-[calc(100%-1rem)] max-h-[90vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
           <DialogTitle>Chọn ca làm</DialogTitle>
 
           {(employeeName || dateLabel) && (
@@ -154,7 +154,7 @@ export function ShiftPickerModal({
           )}
         </DialogHeader>
 
-        <div className="space-y-5 py-2">
+        <div className="space-y-5 py-2 px-6 overflow-y-auto flex-1 min-h-0">
           {isLoading ? (
             <div className="flex justify-center py-10">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
