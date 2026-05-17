@@ -132,15 +132,22 @@ export function useSchedule() {
 
   const addShift = useCallback(
     async (shift: Omit<Shift, "id">) => {
-      await scheduleApi.createShift({
-        shiftCode: shift.code,
-        shiftName: "",
-        startTime: shift.start,
-        endTime: shift.end,
-        color: shift.bg,
-      });
+      try {
+        await scheduleApi.createShift({
+          shiftCode: shift.code,           // ← Phải map đúng tên field
+          startTime: shift.start,          // "08:00"
+          endTime: shift.end,              // "16:00"
+          color: shift.bg,                 // Màu nền
+          session: shift.session || 'morning', // Thêm session (quan trọng)
+          // isActive: true,               // BE đã có default = true
+        });
 
-      await fetchAllData();
+        await fetchAllData();
+        // Có thể thêm toast thông báo thành công
+      } catch (error) {
+        console.error("Lỗi khi thêm ca:", error);
+        // Xử lý lỗi (toast error)
+      }
     },
     [fetchAllData]
   );
