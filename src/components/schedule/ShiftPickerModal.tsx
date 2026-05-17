@@ -181,7 +181,6 @@ export function ShiftPickerModal({
                             color: s.fg,
                             borderColor: selected ? s.fg : "transparent",
                             boxShadow: selected ? `0 12px 28px ${s.bg}` : undefined,
-                            ...(selected ? { ringColor: s.fg } : {}),
                           }}
                         >
                           {selected && (
