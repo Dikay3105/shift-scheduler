@@ -117,7 +117,7 @@ export function ShiftPickerModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md w-[calc(100%-1rem)] max-h-[90vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-4xl w-[calc(100%-1rem)] max-h-[90vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
           <DialogTitle>Chọn ca làm</DialogTitle>
 
