@@ -99,33 +99,6 @@ export function ShiftPickerModal({
     return "sang";
   };
 
-  const getPresetColors = (group: ShiftGroup) => {
-    switch (group) {
-      case "sang":
-        return {
-          bg: "#dbeafe",
-          fg: "#1d4ed8",
-        };
-
-      case "chieu":
-        return {
-          bg: "#fef9c3",
-          fg: "#92400e",
-        };
-
-      case "toi":
-        return {
-          bg: "#ede9fe",
-          fg: "#5b21b6",
-        };
-
-      default:
-        return {
-          bg: "#e5e7eb",
-          fg: "#374151",
-        };
-    }
-  };
 
   const handleSelect = async (shiftId: string | null) => {
     try {
