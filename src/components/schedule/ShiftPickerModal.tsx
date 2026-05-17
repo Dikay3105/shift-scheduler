@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
+import { Check } from "lucide-react";
 
 import type { Shift, ShiftGroup } from "@/lib/schedule-types";
 import { getShiftColor } from "@/lib/shift-colors";
