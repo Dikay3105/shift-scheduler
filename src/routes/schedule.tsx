@@ -452,7 +452,7 @@ function SchedulePage() {
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th className="min-w-[200px] border-r border-white/10 bg-gradient-to-br from-slate-900 to-slate-800 p-4 pl-5 text-left text-xs font-semibold uppercase tracking-wider text-white/90">
+                  <th className="min-w-[200px] border-r border-white/10 bg-gradient-to-br from-slate-900 to-slate-800 p-4 pl-5 text-center text-xs font-semibold uppercase tracking-wider text-white/90">
                     Nhân viên
                   </th>
                   {days.map((d, i) => {
