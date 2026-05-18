@@ -68,6 +68,7 @@ function SchedulePage() {
     deleteShift,
     setAssignment,
     clearWeek,
+    copyWeek,
   } = useSchedule();
 
   const [today, setToday] = useState<Date>(() => new Date());
