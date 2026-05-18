@@ -182,16 +182,62 @@ function SchedulePage() {
         import("html2canvas-pro"),
         import("jspdf"),
       ]);
-      const canvas = await html2canvas(tableRef.current, { scale: 2, backgroundColor: "#ffffff" });
-      const img = canvas.toDataURL("image/png");
+      const canvas = await html2canvas(tableRef.current, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        allowTaint: false,
+        logging: false,
+        windowWidth: tableRef.current.scrollWidth,
+        windowHeight: tableRef.current.scrollHeight,
+      });
+
       const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-      const pw = pdf.internal.pageSize.getWidth();
-      const ph = pdf.internal.pageSize.getHeight();
-      const ratio = Math.min((pw - 40) / canvas.width, (ph - 40) / canvas.height);
-      const w = canvas.width * ratio;
-      const h = canvas.height * ratio;
-      pdf.addImage(img, "PNG", (pw - w) / 2, (ph - h) / 2, w, h);
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 24;
+      const availW = pageW - margin * 2;
+      const availH = pageH - margin * 2;
+
+      // Scale to fit page width
+      const scale = availW / canvas.width;
+      const fullHeightOnPdf = canvas.height * scale;
+
+      if (fullHeightOnPdf <= availH) {
+        // Fits in a single page
+        const img = canvas.toDataURL("image/png");
+        pdf.addImage(img, "PNG", margin, margin, availW, fullHeightOnPdf, undefined, "FAST");
+      } else {
+        // Slice into pages along height
+        const sliceHeightPx = Math.floor(availH / scale);
+        let offsetY = 0;
+        let pageIndex = 0;
+        const sliceCanvas = document.createElement("canvas");
+        const ctx = sliceCanvas.getContext("2d")!;
+        sliceCanvas.width = canvas.width;
+
+        while (offsetY < canvas.height) {
+          const currentSliceH = Math.min(sliceHeightPx, canvas.height - offsetY);
+          sliceCanvas.height = currentSliceH;
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+          ctx.drawImage(
+            canvas,
+            0, offsetY, canvas.width, currentSliceH,
+            0, 0, canvas.width, currentSliceH
+          );
+          const sliceImg = sliceCanvas.toDataURL("image/png");
+          if (pageIndex > 0) pdf.addPage();
+          pdf.addImage(sliceImg, "PNG", margin, margin, availW, currentSliceH * scale, undefined, "FAST");
+          offsetY += currentSliceH;
+          pageIndex++;
+        }
+      }
+
       pdf.save(`${fileBase}.pdf`);
+    } catch (err) {
+      console.error("PDF export failed:", err);
+      alert("Xuất PDF thất bại. Vui lòng thử lại.");
     } finally {
       setExporting(false);
     }
