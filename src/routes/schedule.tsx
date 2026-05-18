@@ -159,16 +159,75 @@ function SchedulePage() {
     }
   };
 
+  // Render the table at a fixed desktop width so mobile capture isn't squashed.
+  const captureTableCanvas = async () => {
+    if (!tableRef.current) return null;
+    const { default: html2canvas } = await import("html2canvas-pro");
+
+    const source = tableRef.current;
+    const DESKTOP_WIDTH = 1280;
+
+    // Clone the node off-screen, force a desktop width, then rasterize.
+    const wrapper = document.createElement("div");
+    wrapper.style.position = "fixed";
+    wrapper.style.left = "-10000px";
+    wrapper.style.top = "0";
+    wrapper.style.width = `${DESKTOP_WIDTH}px`;
+    wrapper.style.background = "#ffffff";
+    wrapper.style.padding = "0";
+    wrapper.style.zIndex = "-1";
+
+    const clone = source.cloneNode(true) as HTMLElement;
+    clone.style.width = `${DESKTOP_WIDTH}px`;
+    clone.style.maxWidth = "none";
+    clone.style.overflow = "visible";
+    // expand any inner scroll containers
+    clone.querySelectorAll<HTMLElement>("*").forEach((el) => {
+      const cs = getComputedStyle(el);
+      if (cs.overflowX === "auto" || cs.overflowX === "scroll") {
+        el.style.overflow = "visible";
+      }
+    });
+
+    wrapper.appendChild(clone);
+    document.body.appendChild(wrapper);
+
+    try {
+      // wait a tick for layout/fonts
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      if ((document as any).fonts?.ready) {
+        try { await (document as any).fonts.ready; } catch {}
+      }
+
+      const canvas = await html2canvas(clone, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        allowTaint: false,
+        logging: false,
+        width: DESKTOP_WIDTH,
+        windowWidth: DESKTOP_WIDTH,
+        windowHeight: clone.scrollHeight,
+      });
+      return canvas;
+    } finally {
+      document.body.removeChild(wrapper);
+    }
+  };
+
   const exportImage = async () => {
     if (!tableRef.current) return;
     setExporting(true);
     try {
-      const { default: html2canvas } = await import("html2canvas-pro");
-      const canvas = await html2canvas(tableRef.current, { scale: 2, backgroundColor: "#ffffff" });
+      const canvas = await captureTableCanvas();
+      if (!canvas) return;
       const link = document.createElement("a");
       link.download = `${fileBase}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
+    } catch (err) {
+      console.error("Image export failed:", err);
+      alert("Xuất ảnh thất bại. Vui lòng thử lại.");
     } finally {
       setExporting(false);
     }
@@ -178,19 +237,9 @@ function SchedulePage() {
     if (!tableRef.current) return;
     setExporting(true);
     try {
-      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-        import("html2canvas-pro"),
-        import("jspdf"),
-      ]);
-      const canvas = await html2canvas(tableRef.current, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        windowWidth: tableRef.current.scrollWidth,
-        windowHeight: tableRef.current.scrollHeight,
-      });
+      const { default: jsPDF } = await import("jspdf");
+      const canvas = await captureTableCanvas();
+      if (!canvas) return;
 
       const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
       const pageW = pdf.internal.pageSize.getWidth();
@@ -199,16 +248,13 @@ function SchedulePage() {
       const availW = pageW - margin * 2;
       const availH = pageH - margin * 2;
 
-      // Scale to fit page width
       const scale = availW / canvas.width;
       const fullHeightOnPdf = canvas.height * scale;
 
       if (fullHeightOnPdf <= availH) {
-        // Fits in a single page
         const img = canvas.toDataURL("image/png");
         pdf.addImage(img, "PNG", margin, margin, availW, fullHeightOnPdf, undefined, "FAST");
       } else {
-        // Slice into pages along height
         const sliceHeightPx = Math.floor(availH / scale);
         let offsetY = 0;
         let pageIndex = 0;
