@@ -27,7 +27,7 @@ export type Shift = {
   group: ShiftGroup;
   bg: string; // background hex
   fg: string; // text hex
-  session?: "morning" | "afternoon" | "evening";
+  session?: "morning" | "afternoon" | "evening" | "night";
 };
 
 // key: `${employeeId}|${YYYY-MM-DD}` -> shiftId
