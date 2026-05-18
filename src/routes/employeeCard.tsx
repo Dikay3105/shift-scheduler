@@ -28,70 +28,139 @@ const mirrorImage = (dataUrl: string): Promise<string> =>
         img.src = dataUrl;
     });
 
+// ─── Vietnamese font loader ───────────────────────────────────────────────────
+const VIET_FONT_CSS = `@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');`;
+const VIET_FONT_FAMILY = `'Be Vietnam Pro', ui-sans-serif, system-ui, sans-serif`;
+
+let vietFontLoaded = false;
+async function ensureVietFont(): Promise<void> {
+    if (vietFontLoaded) return;
+    const style = document.createElement("style");
+    style.textContent = VIET_FONT_CSS;
+    document.head.appendChild(style);
+    if ((document as any).fonts?.ready) {
+        await (document as any).fonts.ready;
+    }
+    await new Promise((r) => setTimeout(r, 600));
+    vietFontLoaded = true;
+}
+
 const captureEl = async (el: HTMLElement): Promise<string> => {
+    await ensureVietFont();
     const { toPng } = await import("html-to-image");
     await new Promise((r) => setTimeout(r, 120));
-    return toPng(el, { pixelRatio: 3, backgroundColor: "#FFFAF8", width: 350, height: 230 });
+    return toPng(el, {
+        pixelRatio: 3,
+        backgroundColor: "#FFFAF8",
+        width: 350,
+        height: 230,
+        fontEmbedCSS: VIET_FONT_CSS,
+    });
 };
+
+// ─── Card builders ────────────────────────────────────────────────────────────
 
 function makeFrontEl(name: string, role: string, empCode: string): HTMLDivElement {
     const el = document.createElement("div");
-    el.style.cssText = "width:350px;height:230px;border-radius:18px;overflow:hidden;background:#FFFAF8;border:1px solid #FFADD0;display:flex;flex-direction:column;font-family:Georgia,serif;box-sizing:border-box";
+    el.style.cssText =
+        `width:350px;height:230px;border-radius:18px;overflow:hidden;background:#FFFAF8;` +
+        `border:1px solid #FFADD0;display:flex;flex-direction:column;` +
+        `font-family:${VIET_FONT_FAMILY};box-sizing:border-box`;
+
     const ini = getInitials(name);
+
     el.innerHTML = `
-<div style="background:linear-gradient(to right,#E8607A,#CC4070,#A8305C);padding:10px 16px;display:flex;align-items:center;gap:10px;overflow:hidden;flex-shrink:0">
-  <div style="width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" width="16" height="16"><path d="M12 2C8 6 6 9 6 12a6 6 0 0012 0c0-3-2-6-6-10z"/><path d="M12 12v8M9 16c1-1.5 4-1.5 6 0"/></svg>
+<div style="background:linear-gradient(to right,#E8607A,#CC4070,#A8305C);padding:10px 16px;
+            display:flex;align-items:center;gap:10px;overflow:hidden;flex-shrink:0">
+  <div style="width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,.4);
+              background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" width="16" height="16">
+      <path d="M12 2C8 6 6 9 6 12a6 6 0 0012 0c0-3-2-6-6-10z"/>
+      <path d="M12 12v8M9 16c1-1.5 4-1.5 6 0"/>
+    </svg>
   </div>
   <div style="flex:1;min-width:0">
-    <p style="color:white;font-size:15px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Cinnamon Forest</p>
+    <p style="color:white;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+              margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+              font-family:${VIET_FONT_FAMILY}">Cinnamon Forest</p>
   </div>
-  <span style="background:rgba(0,0,0,.15);color:rgba(255,255,255,.8);font-size:8px;padding:3px 8px;border-radius:6px;letter-spacing:1px;text-transform:uppercase;flex-shrink:0">2024–2026</span>
+  <span style="background:rgba(0,0,0,.15);color:rgba(255,255,255,.8);font-size:8px;padding:3px 8px;
+               border-radius:6px;letter-spacing:1px;text-transform:uppercase;flex-shrink:0;
+               font-family:${VIET_FONT_FAMILY}">2024–2026</span>
 </div>
 <div style="flex:1;display:flex;align-items:center;gap:16px;padding:12px 16px;overflow:hidden">
-  <div style="position:relative;width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,#F9C6D5,#E88AAE);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:600;color:#922054;flex-shrink:0;border:2.5px solid white;box-shadow:0 0 0 1.5px #FFADD0">
+  <div style="position:relative;width:76px;height:76px;border-radius:50%;
+              background:linear-gradient(135deg,#F9C6D5,#E88AAE);display:flex;align-items:center;
+              justify-content:center;font-size:28px;font-weight:700;color:#922054;flex-shrink:0;
+              border:2.5px solid white;box-shadow:0 0 0 1.5px #FFADD0;
+              font-family:${VIET_FONT_FAMILY}">
     ${ini}
-    <div style="position:absolute;bottom:-2px;right:-2px;width:22px;height:22px;border-radius:50%;background:#FFFAF8;border:1px solid #FFADD0;display:flex;align-items:center;justify-content:center">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#C04060" stroke-width="2" width="12" height="12"><path d="M12 2C8 6 6 9 6 12a6 6 0 0012 0c0-3-2-6-6-10z"/></svg>
+    <div style="position:absolute;bottom:-2px;right:-2px;width:22px;height:22px;border-radius:50%;
+                background:#FFFAF8;border:1px solid #FFADD0;display:flex;align-items:center;justify-content:center">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#C04060" stroke-width="2" width="12" height="12">
+        <path d="M12 2C8 6 6 9 6 12a6 6 0 0012 0c0-3-2-6-6-10z"/>
+      </svg>
     </div>
   </div>
   <div style="flex:1;min-width:0">
-    <p style="font-size:20px;font-weight:600;color:#4A0F2A;margin:0 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</p>
-    <p style="font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:#E0528A;margin:0 0 10px;font-family:sans-serif">${role || "Nhân viên"}</p>
-    <div style="display:inline-flex;border-radius:8px;border:1px solid #FFD6E7;overflow:hidden;background:#FFF0F5">
-      <span style="background:#FFD6E7;padding:4px 8px;font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.8px;color:#922054;font-family:sans-serif">ID</span>
-      <span style="padding:4px 12px;font-size:11px;font-weight:500;letter-spacing:1.2px;color:#4A0F2A;font-family:sans-serif">${empCode}</span>
+    <p style="font-size:20px;font-weight:700;color:#4A0F2A;margin:0 0 4px;
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+              font-family:${VIET_FONT_FAMILY}">${name}</p>
+    <p style="font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:#E0528A;
+              margin:0 0 10px;font-family:${VIET_FONT_FAMILY}">${role || "Nhân viên"}</p>
+    <div style="display:inline-flex;border-radius:8px;border:1px solid #FFD6E7;
+                overflow:hidden;background:#FFF0F5">
+      <span style="background:#FFD6E7;padding:4px 8px;font-size:9px;font-weight:600;
+                   text-transform:uppercase;letter-spacing:.8px;color:#922054;
+                   font-family:${VIET_FONT_FAMILY}">ID</span>
+      <span style="padding:4px 12px;font-size:11px;font-weight:500;letter-spacing:1.2px;
+                   color:#4A0F2A;font-family:${VIET_FONT_FAMILY}">${empCode}</span>
     </div>
   </div>
 </div>
-<div style="height:30px;background:linear-gradient(to right,#CC4070,#E8607A);display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0">
+<div style="height:30px;background:linear-gradient(to right,#CC4070,#E8607A);display:flex;
+            align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0">
   <div style="display:flex;gap:4px">
     <div style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.5)"></div>
     <div style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.5)"></div>
     <div style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.5)"></div>
   </div>
-  <span style="font-size:8.5px;text-transform:uppercase;letter-spacing:2.5px;color:rgba(255,255,255,.85);font-family:sans-serif">Nhân viên chính thức</span>
+  <span style="font-size:8.5px;text-transform:uppercase;letter-spacing:2.5px;
+               color:rgba(255,255,255,.85);font-family:${VIET_FONT_FAMILY}">Nhân viên chính thức</span>
   <span style="font-size:10px;color:rgba(255,255,255,.6)">✦</span>
 </div>`;
+
     return el;
 }
 
 function makeBackEl(addr: string, phone: string, email: string, web: string): HTMLDivElement {
     const el = document.createElement("div");
-    el.style.cssText = "width:350px;height:230px;border-radius:18px;overflow:hidden;background:#FFFAF8;border:1px solid #FFADD0;display:flex;flex-direction:column;position:relative;font-family:sans-serif;box-sizing:border-box";
+    el.style.cssText =
+        `width:350px;height:230px;border-radius:18px;overflow:hidden;background:#FFFAF8;` +
+        `border:1px solid #FFADD0;display:flex;flex-direction:column;position:relative;` +
+        `font-family:${VIET_FONT_FAMILY};box-sizing:border-box`;
+
     const row = (svg: string, text: string) => `
 <div style="display:flex;align-items:flex-start;gap:6px">
-  <div style="width:18px;height:18px;border-radius:5px;border:1px solid #FFD6E7;background:#FFF0F5;display:flex;align-items:center;justify-content:center;flex-shrink:0">${svg}</div>
-  <span style="font-size:10px;color:#4A0F2A;line-height:1.5;word-break:break-all">${text}</span>
+  <div style="width:18px;height:18px;border-radius:5px;border:1px solid #FFD6E7;background:#FFF0F5;
+              display:flex;align-items:center;justify-content:center;flex-shrink:0">${svg}</div>
+  <span style="font-size:10px;color:#4A0F2A;line-height:1.5;word-break:break-all;
+               font-family:${VIET_FONT_FAMILY}">${text}</span>
 </div>`;
+
     el.innerHTML = `
-<div style="height:36px;background:linear-gradient(to right,#E8607A,#A8305C);display:flex;align-items:center;justify-content:center;gap:8px;flex-shrink:0">
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2C8 6 6 9 6 12a6 6 0 0012 0c0-3-2-6-6-10z"/></svg>
-  <span style="font-family:Georgia,serif;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:3px;color:white">Cinnamon Forest</span>
+<div style="height:36px;background:linear-gradient(to right,#E8607A,#A8305C);display:flex;
+            align-items:center;justify-content:center;gap:8px;flex-shrink:0">
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+    <path d="M12 2C8 6 6 9 6 12a6 6 0 0012 0c0-3-2-6-6-10z"/>
+  </svg>
+  <span style="font-family:${VIET_FONT_FAMILY};font-size:12px;font-weight:700;
+               text-transform:uppercase;letter-spacing:3px;color:white">Cinnamon Forest</span>
 </div>
 <div style="display:flex;gap:12px;padding:12px 16px;flex:1;overflow:hidden">
   <div style="flex:1;min-width:0">
-    <p style="font-size:8.5px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:#F472A8;margin:0 0 10px">Liên hệ công ty</p>
+    <p style="font-size:8.5px;font-weight:600;text-transform:uppercase;letter-spacing:1px;
+              color:#F472A8;margin:0 0 10px;font-family:${VIET_FONT_FAMILY}">Liên hệ công ty</p>
     <div style="display:flex;flex-direction:column;gap:6px">
       ${row('<svg viewBox="0 0 16 16" fill="none" stroke="#C04060" stroke-width="1.5" width="9" height="9"><path d="M8 1.5C5.5 1.5 3.5 3.5 3.5 6c0 3.5 4.5 8.5 4.5 8.5S12.5 9.5 12.5 6c0-2.5-2-4.5-4.5-4.5z"/><circle cx="8" cy="6" r="1.5"/></svg>', addr)}
       ${row('<svg viewBox="0 0 16 16" fill="none" stroke="#C04060" stroke-width="1.5" width="9" height="9"><path d="M3 3h2.5l1 3L5 7.5s.9 2.1 3.5 3.5L10 9.5l3 1V13c-6.5 1-11.5-6-10-10z"/></svg>', phone)}
@@ -100,13 +169,18 @@ function makeBackEl(addr: string, phone: string, email: string, web: string): HT
     </div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">
-    <div style="width:74px;height:74px;border-radius:10px;border:1px solid #FFD6E7;background:white;padding:4px;display:flex;align-items:center;justify-content:center">
-      <img src="https://api.qrserver.com/v1/create-qr-code/?size=132x132&data=https://cinnamonforest.com&color=922054&bgcolor=FFFFFF" width="66" height="66"/>
+    <div style="width:74px;height:74px;border-radius:10px;border:1px solid #FFD6E7;background:white;
+                padding:4px;display:flex;align-items:center;justify-content:center">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=132x132&data=https://cinnamonforest.com&color=922054&bgcolor=FFFFFF"
+           width="66" height="66" crossorigin="anonymous"/>
     </div>
-    <span style="font-size:7.5px;text-transform:uppercase;letter-spacing:.8px;color:#F472A8">Website</span>
+    <span style="font-size:7.5px;text-transform:uppercase;letter-spacing:.8px;color:#F472A8;
+                 font-family:${VIET_FONT_FAMILY}">Website</span>
   </div>
 </div>
-<div style="position:absolute;bottom:0;left:0;right:0;height:12px;background:linear-gradient(to right,#A8305C,#E8607A)"></div>`;
+<div style="position:absolute;bottom:0;left:0;right:0;height:12px;
+            background:linear-gradient(to right,#A8305C,#E8607A)"></div>`;
+
     return el;
 }
 
@@ -140,7 +214,7 @@ function EmployeeCardPage() {
         scheduleApi.getEmployees().then((r) => setEmployees(r.data || [])).catch(console.error);
     }, []);
 
-    // ── Capture thẻ preview (1 nhân viên) ────────────────────────────────────
+    // ── Capture thẻ preview (dùng DOM thật trong page, cần mirror mặt sau vì CSS rotateY) ──
     const captureCard = async (side: "front" | "back") => {
         const wasFlipped = flipped;
         if (side === "back" && !flipped) setFlipped(true);
@@ -156,8 +230,16 @@ function EmployeeCardPage() {
         ref.style.webkitBackfaceVisibility = "visible";
         await new Promise((r) => setTimeout(r, 60));
 
+        await ensureVietFont();
         const { toPng } = await import("html-to-image");
-        let url = await toPng(ref, { pixelRatio: 3, backgroundColor: "#FFFAF8", width: ref.offsetWidth, height: ref.offsetHeight });
+        let url = await toPng(ref, {
+            pixelRatio: 3,
+            backgroundColor: "#FFFAF8",
+            width: ref.offsetWidth,
+            height: ref.offsetHeight,
+            fontEmbedCSS: VIET_FONT_CSS,
+        });
+        // Mặt sau trong DOM bị rotateY(180deg) nên cần mirror lại
         if (side === "back") url = await mirrorImage(url);
 
         ref.style.backfaceVisibility = "";
@@ -186,14 +268,14 @@ function EmployeeCardPage() {
         pdf.save(`the-${front.name.replace(/\s/g, "_")}.pdf`);
     };
 
-    // ── Capture tất cả nhân viên, trả về mảng {front, back} dataUrl ──────────
+    // ── Capture tất cả nhân viên (dùng makeEl off-screen, KHÔNG cần mirror) ──
     const captureAllEmployees = async (onProgress: (msg: string) => void) => {
         const res = await scheduleApi.getEmployees();
         const emps: any[] = res.data || [];
         if (!emps.length) { alert("Không có nhân viên nào!"); return null; }
 
         const container = document.createElement("div");
-        container.style.cssText = "position:fixed;left:-9999px;top:0;pointer-events:none;";
+        container.style.cssText = "position:fixed;left:-9999px;top:0;pointer-events:none;z-index:-1;";
         document.body.appendChild(container);
 
         const results: { name: string; front: string; back: string }[] = [];
@@ -207,6 +289,7 @@ function EmployeeCardPage() {
             const frontUrl = await captureEl(frontEl);
             container.removeChild(frontEl);
 
+            // makeBackEl renders straight — no CSS 3D flip — so NO mirror needed
             const backEl = makeBackEl(back.addr, back.phone, back.email, back.web);
             container.appendChild(backEl);
             const backUrl = await captureEl(backEl);
@@ -247,19 +330,16 @@ function EmployeeCardPage() {
         a.click();
     };
 
-    // ── Export: PNG Sheet (lưới 2 cột: trước | sau) ───────────────────────────
+    // ── Export: PNG Sheet ─────────────────────────────────────────────────────
     const doExportSheet = async (cards: { name: string; front: string; back: string }[]) => {
         const CARD_W = 350, CARD_H = 230, GAP = 16, PAD = 24;
-        const COLS = 2; // mỗi hàng: mặt trước bên trái, mặt sau bên phải
         const rows = cards.length;
-        const W = PAD * 2 + CARD_W * COLS + GAP;
+        const W = PAD * 2 + CARD_W * 2 + GAP;
         const H = PAD * 2 + rows * CARD_H + (rows - 1) * GAP;
 
         const canvas = document.createElement("canvas");
         canvas.width = W; canvas.height = H;
         const ctx = canvas.getContext("2d")!;
-
-        // Nền trắng
         ctx.fillStyle = "#FFFAF8";
         ctx.fillRect(0, 0, W, H);
 
@@ -288,7 +368,6 @@ function EmployeeCardPage() {
             setBulkProgress("Đang tải danh sách nhân viên...");
             const cards = await captureAllEmployees(setBulkProgress);
             if (!cards) return;
-
             setBulkProgress("Đang tạo file...");
             if (bulkFormat === "pdf") await doExportPDF(cards);
             else if (bulkFormat === "png-zip") await doExportZip(cards);
@@ -308,6 +387,7 @@ function EmployeeCardPage() {
 
             <div className="min-h-screen bg-white px-4 py-10">
                 <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
                 :root { --rose-200:#FFADD0; --cream:#FFFAF8; }
                 .scene{width:350px;height:230px;perspective:1200px;cursor:pointer;filter:drop-shadow(0 12px 32px rgba(180,60,100,.18))}
                 .inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .75s cubic-bezier(.4,0,.2,1)}
@@ -332,24 +412,24 @@ function EmployeeCardPage() {
                                             <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" className="h-4 w-4"><path d="M12 2C8 6 6 9 6 12a6 6 0 0012 0c0-3-2-6-6-10z" /><path d="M12 12v8M9 16c1-1.5 4-1.5 6 0" /></svg>
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <p className="truncate font-serif text-[15px] font-semibold uppercase tracking-[2px] text-white">Cinnamon Forest</p>
+                                            <p className="truncate font-['Be_Vietnam_Pro'] text-[15px] font-bold uppercase tracking-[2px] text-white">Cinnamon Forest</p>
                                         </div>
-                                        <span className="shrink-0 whitespace-nowrap rounded-md bg-black/15 px-2 py-1 text-[8px] uppercase tracking-[1px] text-white/80">2024–2026</span>
+                                        <span className="shrink-0 whitespace-nowrap rounded-md bg-black/15 px-2 py-1 font-['Be_Vietnam_Pro'] text-[8px] uppercase tracking-[1px] text-white/80">2024–2026</span>
                                         <div className="absolute -right-5 -top-8 h-24 w-24 rounded-full bg-white/10" />
                                     </div>
                                     <div className="flex h-[140px] items-center gap-4 px-4 py-3">
-                                        <div className="relative flex h-[76px] w-[76px] shrink-0 items-center justify-center rounded-full border-[2.5px] border-white bg-gradient-to-br from-[#F9C6D5] to-[#E88AAE] font-serif text-[28px] font-semibold text-[#922054] shadow-[0_0_0_1.5px_#FFADD0]">
+                                        <div className="relative flex h-[76px] w-[76px] shrink-0 items-center justify-center rounded-full border-[2.5px] border-white bg-gradient-to-br from-[#F9C6D5] to-[#E88AAE] font-['Be_Vietnam_Pro'] text-[28px] font-bold text-[#922054] shadow-[0_0_0_1.5px_#FFADD0]">
                                             {initials}
                                             <div className="absolute bottom-[-2px] right-[-2px] flex h-[22px] w-[22px] items-center justify-center rounded-full border border-[#FFADD0] bg-[#FFFAF8]">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="#C04060" strokeWidth="2" className="h-3 w-3"><path d="M12 2C8 6 6 9 6 12a6 6 0 0012 0c0-3-2-6-6-10z" /></svg>
                                             </div>
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <p className="truncate font-serif text-[20px] font-semibold leading-tight text-[#4A0F2A]">{front.name}</p>
-                                            <p className="mb-3 mt-1 text-[10px] uppercase tracking-[1.2px] text-[#E0528A]">{front.role}</p>
+                                            <p className="truncate font-['Be_Vietnam_Pro'] text-[20px] font-bold leading-tight text-[#4A0F2A]">{front.name}</p>
+                                            <p className="mb-3 mt-1 font-['Be_Vietnam_Pro'] text-[10px] uppercase tracking-[1.2px] text-[#E0528A]">{front.role}</p>
                                             <div className="flex w-fit items-center overflow-hidden rounded-lg border border-[#FFD6E7] bg-[#FFF0F5]">
-                                                <span className="bg-[#FFD6E7] px-2 py-1 text-[9px] font-medium uppercase tracking-[0.8px] text-[#922054]">ID</span>
-                                                <span className="px-3 py-1 text-[11px] font-medium tracking-[1.2px] text-[#4A0F2A]">{front.id}</span>
+                                                <span className="bg-[#FFD6E7] px-2 py-1 font-['Be_Vietnam_Pro'] text-[9px] font-semibold uppercase tracking-[0.8px] text-[#922054]">ID</span>
+                                                <span className="px-3 py-1 font-['Be_Vietnam_Pro'] text-[11px] font-medium tracking-[1.2px] text-[#4A0F2A]">{front.id}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -359,7 +439,7 @@ function EmployeeCardPage() {
                                             <div className="h-[5px] w-[5px] rounded-full bg-white/50" />
                                             <div className="h-[5px] w-[5px] rounded-full bg-white/50" />
                                         </div>
-                                        <span className="text-[8.5px] uppercase tracking-[2.5px] text-white/85">Nhân viên chính thức</span>
+                                        <span className="font-['Be_Vietnam_Pro'] text-[8.5px] uppercase tracking-[2.5px] text-white/85">Nhân viên chính thức</span>
                                         <span className="text-[10px] text-white/60">✦</span>
                                     </div>
                                 </div>
@@ -368,11 +448,11 @@ function EmployeeCardPage() {
                                 <div className="face back" ref={backRef}>
                                     <div className="flex h-9 items-center justify-center gap-2 bg-gradient-to-r from-[#E8607A] to-[#A8305C]">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M12 2C8 6 6 9 6 12a6 6 0 0012 0c0-3-2-6-6-10z" /></svg>
-                                        <span className="font-serif text-[12px] font-semibold uppercase tracking-[3px] text-white">Cinnamon Forest</span>
+                                        <span className="font-['Be_Vietnam_Pro'] text-[12px] font-bold uppercase tracking-[3px] text-white">Cinnamon Forest</span>
                                     </div>
                                     <div className="flex gap-3 px-4 pt-3">
                                         <div className="flex-1">
-                                            <p className="mb-3 text-[8.5px] font-medium uppercase tracking-[1px] text-[#F472A8]">Liên hệ công ty</p>
+                                            <p className="mb-3 font-['Be_Vietnam_Pro'] text-[8.5px] font-semibold uppercase tracking-[1px] text-[#F472A8]">Liên hệ công ty</p>
                                             <div className="space-y-2">
                                                 <InfoRow type="address" text={back.addr} />
                                                 <InfoRow type="phone" text={back.phone} />
@@ -384,7 +464,7 @@ function EmployeeCardPage() {
                                             <div className="flex h-[74px] w-[74px] items-center justify-center overflow-hidden rounded-[10px] border border-[#FFD6E7] bg-white p-1">
                                                 <QRCode value="https://cinnamonforest.com" size={66} style={{ height: "66px", width: "66px" }} fgColor="#922054" bgColor="#FFFFFF" />
                                             </div>
-                                            <span className="text-[7.5px] uppercase tracking-[0.8px] text-[#F472A8]">Website</span>
+                                            <span className="font-['Be_Vietnam_Pro'] text-[7.5px] uppercase tracking-[0.8px] text-[#F472A8]">Website</span>
                                         </div>
                                     </div>
                                     <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-r from-[#A8305C] to-[#E8607A]" />
@@ -421,8 +501,8 @@ function EmployeeCardPage() {
                                         key={o.v}
                                         onClick={() => setBulkFormat(o.v)}
                                         className={`text-left rounded-lg border-2 p-2.5 transition ${bulkFormat === o.v
-                                                ? "border-[#E0528A] bg-[#FFD6E7]/40"
-                                                : "border-[#FFD6E7] bg-white hover:border-[#F472A8]"
+                                            ? "border-[#E0528A] bg-[#FFD6E7]/40"
+                                            : "border-[#FFD6E7] bg-white hover:border-[#F472A8]"
                                             }`}
                                     >
                                         <div className="text-[12px] font-semibold text-[#4A0F2A]">{o.t}</div>
@@ -479,7 +559,7 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
     return (
         <div className="mb-4">
             <label className="mb-1 block text-[10px] uppercase tracking-[0.8px] text-gray-400">{label}</label>
-            <input value={value} onChange={(e) => onChange(e.target.value)} className="w-full rounded-lg border border-[#FFD6E7] px-3 py-2 text-[12.5px] text-[#4A0F2A] outline-none transition focus:border-[#F472A8]" />
+            <input value={value} onChange={(e) => onChange(e.target.value)} className="w-full rounded-lg border border-[#FFD6E7] px-3 py-2 font-['Be_Vietnam_Pro'] text-[12.5px] text-[#4A0F2A] outline-none transition focus:border-[#F472A8]" />
         </div>
     );
 }
@@ -493,7 +573,7 @@ function InfoRow({ text, type }: { text: string; type: "address" | "phone" | "em
                 {type === "email" && <svg viewBox="0 0 16 16" fill="none" stroke="#C04060" strokeWidth="1.5" className="h-[9px] w-[9px]"><rect x="2" y="4" width="12" height="9" rx="1.5" /><path d="M2 5l6 5 6-5" /></svg>}
                 {type === "web" && <svg viewBox="0 0 16 16" fill="none" stroke="#C04060" strokeWidth="1.5" className="h-[9px] w-[9px]"><circle cx="8" cy="8" r="5.5" /><path d="M8 2.5C6.5 5 6 6.5 6 8s.5 3 2 5.5M8 2.5C9.5 5 10 6.5 10 8s-.5 3-2 5.5M2.5 8h11" /></svg>}
             </div>
-            <span className="break-words text-[10px] leading-[1.5] text-[#4A0F2A]">{text}</span>
+            <span className="break-words font-['Be_Vietnam_Pro'] text-[10px] leading-[1.5] text-[#4A0F2A]">{text}</span>
         </div>
     );
 }
