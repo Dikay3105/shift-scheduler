@@ -95,6 +95,47 @@ function SchedulePage() {
   const [shiftOpen, setShiftOpen] = useState(false);
   const [picker, setPicker] = useState<{ empId: string; dateKey: string } | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [copyOpen, setCopyOpen] = useState(false);
+  const [copySourceWeek, setCopySourceWeek] = useState<string>("");
+  const [copyError, setCopyError] = useState<string | null>(null);
+  const [copying, setCopying] = useState(false);
+
+  const handleCopyWeek = async () => {
+    setCopyError(null);
+    const wn = parseInt(copySourceWeek, 10);
+    if (!wn || wn < 1 || wn > 53) {
+      setCopyError("Số tuần không hợp lệ (1-53)");
+      return;
+    }
+    if (wn === week) {
+      setCopyError("Tuần nguồn trùng với tuần hiện tại");
+      return;
+    }
+    // Tính ngày bắt đầu của tuần nguồn trong cùng năm với tuần đang xem
+    // Dùng ISO week: ngày 4/1 luôn thuộc tuần 1
+    const jan4 = new Date(year, 0, 4);
+    const jan4WeekStart = startOfISOWeek(jan4);
+    const sourceWeekStart = addDays(jan4WeekStart, (wn - 1) * 7);
+    const sourceKey = formatDateKey(sourceWeekStart);
+    const targetKey = formatDateKey(weekStart);
+
+    if (sourceKey === targetKey) {
+      setCopyError("Tuần nguồn trùng với tuần hiện tại");
+      return;
+    }
+
+    try {
+      setCopying(true);
+      await copyWeek(sourceKey, targetKey);
+      setCopyOpen(false);
+      setCopySourceWeek("");
+    } catch (e) {
+      console.error(e);
+      setCopyError("Sao chép thất bại. Vui lòng thử lại.");
+    } finally {
+      setCopying(false);
+    }
+  };
 
   const [searchInput, setSearchInput] = useState("");
   const [searchError, setSearchError] = useState<string | null>(null);
