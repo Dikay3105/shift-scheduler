@@ -253,6 +253,14 @@ export function useSchedule() {
     [fetchAllData, state.scheduleMap]
   );
 
+  const copyWeek = useCallback(
+    async (sourceStartDate: string, targetStartDate: string) => {
+      await scheduleApi.copyWeek(sourceStartDate, targetStartDate);
+      await fetchAllData();
+    },
+    [fetchAllData]
+  );
+
   return {
     state,
     hydrated,
@@ -268,6 +276,7 @@ export function useSchedule() {
 
     setAssignment,
     clearWeek,
+    copyWeek,
 
     refresh: fetchAllData,
   };
