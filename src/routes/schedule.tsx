@@ -159,90 +159,120 @@ function SchedulePage() {
     }
   };
 
+  const buildPrintHTML = () => {
+    const headerCells = days.map((d, i) => {
+      const isWeekend = i >= 5;
+      const isToday = formatDateKey(d) === todayKey;
+      const bg = isWeekend ? "#c2410c" : "#1e293b";
+      const border = isToday ? "3px solid #fde047" : "1px solid rgba(255,255,255,0.1)";
+      return `
+      <th style="background:${bg};color:white;padding:12px 8px;text-align:center;
+                 border-right:${border};min-width:120px;border-bottom:2px solid #334155;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">
+          ${DAY_NAMES[i]}
+        </div>
+        <div style="font-size:18px;font-weight:800;margin-top:4px;
+                    ${isToday ? "color:#fde047;" : ""}">
+          ${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}
+        </div>
+        ${isToday ? '<div style="font-size:9px;font-weight:700;color:#fde047;margin-top:2px;">HÔM NAY</div>' : ""}
+      </th>`;
+    }).join("");
+
+    const bodyRows = state.employees.map((emp, idx) => {
+      const bg = idx % 2 === 0 ? "#ffffff" : "#f8fafc";
+      const dataCells = dayKeys.map((dk, i) => {
+        const isWeekend = i >= 5;
+        const isToday = dk === todayKey;
+        const cellBg = isToday ? "#fefce8" : isWeekend ? "#fff7ed" : "transparent";
+        const shiftId = state.assignments[`${emp.id}|${dk}`];
+        const shift = shiftId ? shiftById.get(shiftId) : null;
+
+        const inner = shift
+          ? `<div style="display:inline-block;min-width:100px;padding:8px 12px;border-radius:12px;
+                      background:${shift.bg};color:${shift.fg};text-align:center;
+                      box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+             <div style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px;">
+               ${shift.code}
+             </div>
+             <div style="font-size:10px;font-weight:600;margin-top:2px;opacity:0.9;">
+               ${shift.start} – ${shift.end}
+             </div>
+           </div>`
+          : `<div style="width:36px;height:36px;border-radius:10px;border:2px dashed #cbd5e1;
+                      display:inline-flex;align-items:center;justify-content:center;
+                      color:#94a3b8;font-size:20px;line-height:1;">+</div>`;
+
+        return `<td style="border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;
+                         padding:8px;text-align:center;background:${cellBg};">${inner}</td>`;
+      }).join("");
+
+      // Avatar với inline style hoàn toàn
+      const avatarLetter = emp.name.charAt(0).toUpperCase();
+      const empCell = `
+      <td style="border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;
+                 padding:12px 16px;background:${bg};min-width:180px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:36px;height:36px;border-radius:50%;background:${emp.color};
+                      color:white;font-size:14px;font-weight:700;display:flex;
+                      align-items:center;justify-content:center;flex-shrink:0;
+                      box-shadow:0 2px 6px rgba(0,0,0,0.2);">
+            ${avatarLetter}
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#1e293b;">${emp.name}</div>
+            ${emp.role ? `<div style="font-size:11px;color:#4f46e5;font-weight:500;">${emp.role}</div>` : ""}
+          </div>
+        </div>
+      </td>`;
+
+      return `<tr style="background:${bg};">${empCell}${dataCells}</tr>`;
+    }).join("");
+
+    return `
+    <div style="font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;
+                background:white;border-radius:16px;overflow:hidden;
+                box-shadow:0 4px 24px rgba(0,0,0,0.1);">
+      <table style="border-collapse:collapse;width:100%;">
+        <thead>
+          <tr>
+            <th style="background:#1e293b;color:white;padding:16px 20px;text-align:left;
+                       min-width:180px;border-right:1px solid rgba(255,255,255,0.1);
+                       border-bottom:2px solid #334155;font-size:11px;
+                       text-transform:uppercase;letter-spacing:1px;">
+              Nhân viên
+            </th>
+            ${headerCells}
+          </tr>
+        </thead>
+        <tbody>${bodyRows}</tbody>
+      </table>
+    </div>`;
+  };
+
   // Render the table at a fixed desktop width so mobile capture isn't squashed.
   const captureTableCanvas = async () => {
-    if (!tableRef.current) return null;
     const { default: html2canvas } = await import("html2canvas-pro");
 
-    const source = tableRef.current;
     const DESKTOP_WIDTH = 1280;
-
     const wrapper = document.createElement("div");
-    wrapper.style.cssText = `position:fixed;left:-10000px;top:0;width:${DESKTOP_WIDTH}px;background:#ffffff;z-index:-1;`;
-
-    const clone = source.cloneNode(true) as HTMLElement;
-    clone.style.width = `${DESKTOP_WIDTH}px`;
-    clone.style.maxWidth = "none";
-    clone.style.overflow = "visible";
-
-    // ✅ FIX: Inline tất cả computed styles để tránh CSS variable bị mất
-    const inlineComputedStyles = (original: Element, cloned: Element) => {
-      const computed = getComputedStyle(original);
-      const el = cloned as HTMLElement;
-
-      // Chỉ copy các property quan trọng, không copy tất cả (quá chậm)
-      const props = [
-        "color", "background-color", "background",
-        "font-family", "font-size", "font-weight",
-        "border-radius", "border-color", "border-width",
-        "padding", "margin", "box-shadow",
-        "display", "flex-direction", "align-items", "justify-content",
-      ];
-      props.forEach((p) => {
-        try { el.style.setProperty(p, computed.getPropertyValue(p)); } catch { }
-      });
-
-      const origChildren = original.children;
-      const clonedChildren = cloned.children;
-      for (let i = 0; i < origChildren.length; i++) {
-        inlineComputedStyles(origChildren[i], clonedChildren[i]);
-      }
-    };
-
-    // Apply trên source gốc (còn đang trong DOM, có đủ CSS context)
-    inlineComputedStyles(source, clone);
-
-    clone.querySelectorAll<HTMLElement>("*").forEach((el) => {
-      const cs = getComputedStyle(el);
-      if (cs.overflowX === "auto" || cs.overflowX === "scroll") {
-        el.style.overflow = "visible";
-      }
-    });
-
-    wrapper.appendChild(clone);
+    wrapper.style.cssText = `position:fixed;left:-10000px;top:0;width:${DESKTOP_WIDTH}px;
+                            background:#f1f5f9;padding:24px;box-sizing:border-box;z-index:-1;`;
+    wrapper.innerHTML = buildPrintHTML();
     document.body.appendChild(wrapper);
 
     try {
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null)))); // ✅ 2 frames thay vì 1
-      if ((document as any).fonts?.ready) {
-        await (document as any).fonts.ready;
-      }
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null))));
+      if ((document as any).fonts?.ready) await (document as any).fonts.ready;
 
-      const canvas = await html2canvas(clone, {
+      const canvas = await html2canvas(wrapper, {
         scale: 2,
-        backgroundColor: "#ffffff",
+        backgroundColor: "#f1f5f9",
         useCORS: true,
         allowTaint: false,
         logging: false,
         width: DESKTOP_WIDTH,
         windowWidth: DESKTOP_WIDTH,
-        windowHeight: clone.scrollHeight,
-        onclone: (doc) => {
-          // ✅ Inject lại CSS variables vào document được clone bởi html2canvas
-          const style = doc.createElement("style");
-          style.textContent = `
-          :root {
-            --background: ${getComputedStyle(document.documentElement).getPropertyValue("--background")};
-            --foreground: ${getComputedStyle(document.documentElement).getPropertyValue("--foreground")};
-            --card: ${getComputedStyle(document.documentElement).getPropertyValue("--card")};
-            --border: ${getComputedStyle(document.documentElement).getPropertyValue("--border")};
-            --muted: ${getComputedStyle(document.documentElement).getPropertyValue("--muted")};
-            --indigo-50: #eef2ff;
-          }
-          * { font-family: ui-sans-serif, system-ui, sans-serif !important; }
-        `;
-          doc.head.appendChild(style);
-        },
       });
       return canvas;
     } finally {
@@ -432,8 +462,8 @@ function SchedulePage() {
                       <th
                         key={i}
                         className={`border-r border-white/10 p-3 text-center text-xs font-semibold last:border-r-0 ${isWeekend
-                            ? "bg-gradient-to-br from-amber-600 to-orange-700 text-white"
-                            : "bg-gradient-to-br from-slate-900 to-slate-800 text-white/90"
+                          ? "bg-gradient-to-br from-amber-600 to-orange-700 text-white"
+                          : "bg-gradient-to-br from-slate-900 to-slate-800 text-white/90"
                           } ${isToday ? "ring-2 ring-inset ring-yellow-300" : ""}`}
                       >
                         <div className="text-[12px] font-bold uppercase tracking-wider">{DAY_NAMES[i]}</div>
