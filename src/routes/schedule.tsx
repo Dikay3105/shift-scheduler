@@ -679,6 +679,41 @@ function SchedulePage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <Dialog open={copyOpen} onOpenChange={(v) => { if (!copying) setCopyOpen(v); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Copy className="h-5 w-5" /> Copy lịch từ tuần khác
+            </DialogTitle>
+            <DialogDescription>
+              Toàn bộ lịch tuần <b>{week}/{year}</b> sẽ bị thay thế bằng lịch của tuần bạn chọn (trong năm {year}).
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2 py-2">
+            <Label htmlFor="copy-source-week">Số tuần nguồn</Label>
+            <Input
+              id="copy-source-week"
+              type="number"
+              min={1}
+              max={53}
+              placeholder="VD: 20"
+              value={copySourceWeek}
+              onChange={(e) => { setCopySourceWeek(e.target.value); if (copyError) setCopyError(null); }}
+              autoFocus
+            />
+            {copyError && <p className="text-xs text-rose-600">{copyError}</p>}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCopyOpen(false)} disabled={copying}>Hủy</Button>
+            <Button onClick={handleCopyWeek} disabled={copying} className="bg-indigo-600 text-white hover:bg-indigo-700">
+              {copying ? "Đang copy..." : "Copy"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
