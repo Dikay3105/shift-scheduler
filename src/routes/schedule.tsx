@@ -167,21 +167,41 @@ function SchedulePage() {
     const source = tableRef.current;
     const DESKTOP_WIDTH = 1280;
 
-    // Clone the node off-screen, force a desktop width, then rasterize.
     const wrapper = document.createElement("div");
-    wrapper.style.position = "fixed";
-    wrapper.style.left = "-10000px";
-    wrapper.style.top = "0";
-    wrapper.style.width = `${DESKTOP_WIDTH}px`;
-    wrapper.style.background = "#ffffff";
-    wrapper.style.padding = "0";
-    wrapper.style.zIndex = "-1";
+    wrapper.style.cssText = `position:fixed;left:-10000px;top:0;width:${DESKTOP_WIDTH}px;background:#ffffff;z-index:-1;`;
 
     const clone = source.cloneNode(true) as HTMLElement;
     clone.style.width = `${DESKTOP_WIDTH}px`;
     clone.style.maxWidth = "none";
     clone.style.overflow = "visible";
-    // expand any inner scroll containers
+
+    // ✅ FIX: Inline tất cả computed styles để tránh CSS variable bị mất
+    const inlineComputedStyles = (original: Element, cloned: Element) => {
+      const computed = getComputedStyle(original);
+      const el = cloned as HTMLElement;
+
+      // Chỉ copy các property quan trọng, không copy tất cả (quá chậm)
+      const props = [
+        "color", "background-color", "background",
+        "font-family", "font-size", "font-weight",
+        "border-radius", "border-color", "border-width",
+        "padding", "margin", "box-shadow",
+        "display", "flex-direction", "align-items", "justify-content",
+      ];
+      props.forEach((p) => {
+        try { el.style.setProperty(p, computed.getPropertyValue(p)); } catch { }
+      });
+
+      const origChildren = original.children;
+      const clonedChildren = cloned.children;
+      for (let i = 0; i < origChildren.length; i++) {
+        inlineComputedStyles(origChildren[i], clonedChildren[i]);
+      }
+    };
+
+    // Apply trên source gốc (còn đang trong DOM, có đủ CSS context)
+    inlineComputedStyles(source, clone);
+
     clone.querySelectorAll<HTMLElement>("*").forEach((el) => {
       const cs = getComputedStyle(el);
       if (cs.overflowX === "auto" || cs.overflowX === "scroll") {
@@ -193,10 +213,9 @@ function SchedulePage() {
     document.body.appendChild(wrapper);
 
     try {
-      // wait a tick for layout/fonts
-      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null)))); // ✅ 2 frames thay vì 1
       if ((document as any).fonts?.ready) {
-        try { await (document as any).fonts.ready; } catch {}
+        await (document as any).fonts.ready;
       }
 
       const canvas = await html2canvas(clone, {
@@ -208,6 +227,22 @@ function SchedulePage() {
         width: DESKTOP_WIDTH,
         windowWidth: DESKTOP_WIDTH,
         windowHeight: clone.scrollHeight,
+        onclone: (doc) => {
+          // ✅ Inject lại CSS variables vào document được clone bởi html2canvas
+          const style = doc.createElement("style");
+          style.textContent = `
+          :root {
+            --background: ${getComputedStyle(document.documentElement).getPropertyValue("--background")};
+            --foreground: ${getComputedStyle(document.documentElement).getPropertyValue("--foreground")};
+            --card: ${getComputedStyle(document.documentElement).getPropertyValue("--card")};
+            --border: ${getComputedStyle(document.documentElement).getPropertyValue("--border")};
+            --muted: ${getComputedStyle(document.documentElement).getPropertyValue("--muted")};
+            --indigo-50: #eef2ff;
+          }
+          * { font-family: ui-sans-serif, system-ui, sans-serif !important; }
+        `;
+          doc.head.appendChild(style);
+        },
       });
       return canvas;
     } finally {
@@ -396,11 +431,10 @@ function SchedulePage() {
                     return (
                       <th
                         key={i}
-                        className={`border-r border-white/10 p-3 text-center text-xs font-semibold last:border-r-0 ${
-                          isWeekend
+                        className={`border-r border-white/10 p-3 text-center text-xs font-semibold last:border-r-0 ${isWeekend
                             ? "bg-gradient-to-br from-amber-600 to-orange-700 text-white"
                             : "bg-gradient-to-br from-slate-900 to-slate-800 text-white/90"
-                        } ${isToday ? "ring-2 ring-inset ring-yellow-300" : ""}`}
+                          } ${isToday ? "ring-2 ring-inset ring-yellow-300" : ""}`}
                       >
                         <div className="text-[12px] font-bold uppercase tracking-wider">{DAY_NAMES[i]}</div>
                         <div className={`mt-1 text-lg font-bold ${isToday ? "text-yellow-200" : ""}`}>
@@ -417,9 +451,8 @@ function SchedulePage() {
                 {state.employees.map((emp, idx) => (
                   <tr
                     key={emp.id}
-                    className={`border-b border-border/50 last:border-b-0 transition-colors hover:bg-indigo-50/40 ${
-                      idx % 2 === 0 ? "bg-background" : "bg-muted/20"
-                    }`}
+                    className={`border-b border-border/50 last:border-b-0 transition-colors hover:bg-indigo-50/40 ${idx % 2 === 0 ? "bg-background" : "bg-muted/20"
+                      }`}
                   >
                     <td className="border-r border-border/50 px-5 py-3 text-left">
                       <div className="flex items-center gap-3">
@@ -447,9 +480,8 @@ function SchedulePage() {
                       return (
                         <td
                           key={dk}
-                          className={`border-r border-border/50 p-2 text-center last:border-r-0 ${
-                            isToday ? "bg-yellow-50/60" : isWeekend ? "bg-orange-50/40" : ""
-                          }`}
+                          className={`border-r border-border/50 p-2 text-center last:border-r-0 ${isToday ? "bg-yellow-50/60" : isWeekend ? "bg-orange-50/40" : ""
+                            }`}
                         >
                           {shift ? (
                             <button
