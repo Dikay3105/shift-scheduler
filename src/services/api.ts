@@ -109,4 +109,68 @@ export const scheduleApi = {
 
     return res.json();
   },
+
+  // Copy toàn bộ lịch từ tuần nguồn sang tuần đích (giữ nguyên nhân viên + ca, dịch ngày 7*N)
+  copyWeek: async (sourceStartDate: string, targetStartDate: string) => {
+    // Ưu tiên gọi endpoint chuyên dụng nếu BE có sẵn
+    try {
+      const res = await fetch(`${API_BASE}/schedules/copy-week`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sourceStartDate, targetStartDate }),
+      });
+      if (res.ok) return res.json();
+    } catch {
+      // ignore, fallback bên dưới
+    }
+
+    // Fallback: tự compose từ các endpoint sẵn có
+    const addDaysStr = (dateStr: string, n: number) => {
+      const d = new Date(dateStr);
+      d.setDate(d.getDate() + n);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+
+    const sourceEnd = addDaysStr(sourceStartDate, 6);
+    const targetEnd = addDaysStr(targetStartDate, 6);
+
+    const [sourceRes, targetRes] = await Promise.all([
+      fetch(`${API_BASE}/schedules?startDate=${sourceStartDate}&endDate=${sourceEnd}`).then((r) => r.json()),
+      fetch(`${API_BASE}/schedules?startDate=${targetStartDate}&endDate=${targetEnd}`).then((r) => r.json()),
+    ]);
+
+    const sourceList: any[] = sourceRes.data || [];
+    const targetList: any[] = targetRes.data || [];
+
+    // Xoá toàn bộ lịch tuần đích trước
+    await Promise.all(
+      targetList.map((sch: any) =>
+        fetch(`${API_BASE}/schedules/${sch._id}`, { method: "DELETE" })
+      )
+    );
+
+    // Tạo lại theo source (dịch ngày)
+    const srcStart = new Date(sourceStartDate);
+    await Promise.all(
+      sourceList.map((sch: any) => {
+        const srcDate = new Date(String(sch.date).split("T")[0]);
+        const offset = Math.round(
+          (srcDate.getTime() - srcStart.getTime()) / 86400000
+        );
+        const newDate = addDaysStr(targetStartDate, offset);
+        const empId = sch.employee?._id || sch.employee;
+        const shiftId = sch.shift?._id || sch.shift;
+        return fetch(`${API_BASE}/schedules`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ employee: empId, shift: shiftId, date: newDate }),
+        });
+      })
+    );
+
+    return { success: true };
+  },
 };
