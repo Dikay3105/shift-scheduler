@@ -55,11 +55,18 @@ export function useSchedule() {
         scheduleMap[key] = sch._id;
       });
 
+      const EMP_PALETTE = [
+        "#db2777", "#0369a1", "#059669", "#b45309",
+        "#dc2626", "#0891b2", "#7c3aed", "#1e293b",
+        "#e11d48", "#0d9488", "#9333ea", "#ca8a04",
+        "#2563eb", "#16a34a", "#ea580c", "#475569",
+      ];
+
       setState({
-        employees: employees.map((emp: any) => ({
+        employees: employees.map((emp: any, idx: number) => ({
           id: emp._id,
           name: emp.fullName,
-          color: "#3b82f6",
+          color: emp.color || EMP_PALETTE[idx % EMP_PALETTE.length],
           role: emp.position,
         })),
 
