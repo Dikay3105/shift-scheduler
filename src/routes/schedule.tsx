@@ -38,8 +38,18 @@ import {
   FileSpreadsheet,
   FileText,
   ImageDown,
+  Copy,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import AdminHeader from "@/components/AdminHeader";
 
 export const Route = createFileRoute("/schedule")({
@@ -58,6 +68,7 @@ function SchedulePage() {
     deleteShift,
     setAssignment,
     clearWeek,
+    copyWeek,
   } = useSchedule();
 
   const [today, setToday] = useState<Date>(() => new Date());
@@ -84,6 +95,47 @@ function SchedulePage() {
   const [shiftOpen, setShiftOpen] = useState(false);
   const [picker, setPicker] = useState<{ empId: string; dateKey: string } | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [copyOpen, setCopyOpen] = useState(false);
+  const [copySourceWeek, setCopySourceWeek] = useState<string>("");
+  const [copyError, setCopyError] = useState<string | null>(null);
+  const [copying, setCopying] = useState(false);
+
+  const handleCopyWeek = async () => {
+    setCopyError(null);
+    const wn = parseInt(copySourceWeek, 10);
+    if (!wn || wn < 1 || wn > 53) {
+      setCopyError("Số tuần không hợp lệ (1-53)");
+      return;
+    }
+    if (wn === week) {
+      setCopyError("Tuần nguồn trùng với tuần hiện tại");
+      return;
+    }
+    // Tính ngày bắt đầu của tuần nguồn trong cùng năm với tuần đang xem
+    // Dùng ISO week: ngày 4/1 luôn thuộc tuần 1
+    const jan4 = new Date(year, 0, 4);
+    const jan4WeekStart = startOfISOWeek(jan4);
+    const sourceWeekStart = addDays(jan4WeekStart, (wn - 1) * 7);
+    const sourceKey = formatDateKey(sourceWeekStart);
+    const targetKey = formatDateKey(weekStart);
+
+    if (sourceKey === targetKey) {
+      setCopyError("Tuần nguồn trùng với tuần hiện tại");
+      return;
+    }
+
+    try {
+      setCopying(true);
+      await copyWeek(sourceKey, targetKey);
+      setCopyOpen(false);
+      setCopySourceWeek("");
+    } catch (e) {
+      console.error(e);
+      setCopyError("Sao chép thất bại. Vui lòng thử lại.");
+    } finally {
+      setCopying(false);
+    }
+  };
 
   const [searchInput, setSearchInput] = useState("");
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -429,6 +481,9 @@ function SchedulePage() {
             <Button size="sm" className="bg-white/15 text-white hover:bg-white/25 border border-white/20" onClick={() => setShiftOpen(true)}>
               <Clock className="mr-1.5 h-4 w-4" /> Ca làm
             </Button>
+            <Button size="sm" className="bg-white/15 text-white hover:bg-white/25 border border-white/20" onClick={() => { setCopyError(null); setCopyOpen(true); }}>
+              <Copy className="mr-1.5 h-4 w-4" /> Copy tuần
+            </Button>
             <Button size="sm" className="bg-white/15 text-white hover:bg-white/25 border border-white/20" onClick={() => setConfirmClear(true)}>
               <Trash2 className="mr-1.5 h-4 w-4" /> Xóa tuần
             </Button>
@@ -623,6 +678,41 @@ function SchedulePage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={copyOpen} onOpenChange={(v) => { if (!copying) setCopyOpen(v); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Copy className="h-5 w-5" /> Copy lịch từ tuần khác
+            </DialogTitle>
+            <DialogDescription>
+              Toàn bộ lịch tuần <b>{week}/{year}</b> sẽ bị thay thế bằng lịch của tuần bạn chọn (trong năm {year}).
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2 py-2">
+            <Label htmlFor="copy-source-week">Số tuần nguồn</Label>
+            <Input
+              id="copy-source-week"
+              type="number"
+              min={1}
+              max={53}
+              placeholder="VD: 20"
+              value={copySourceWeek}
+              onChange={(e) => { setCopySourceWeek(e.target.value); if (copyError) setCopyError(null); }}
+              autoFocus
+            />
+            {copyError && <p className="text-xs text-rose-600">{copyError}</p>}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCopyOpen(false)} disabled={copying}>Hủy</Button>
+            <Button onClick={handleCopyWeek} disabled={copying} className="bg-indigo-600 text-white hover:bg-indigo-700">
+              {copying ? "Đang copy..." : "Copy"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );
