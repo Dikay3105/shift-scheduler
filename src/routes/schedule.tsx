@@ -38,8 +38,18 @@ import {
   FileSpreadsheet,
   FileText,
   ImageDown,
+  Copy,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import AdminHeader from "@/components/AdminHeader";
 
 export const Route = createFileRoute("/schedule")({
