@@ -80,13 +80,13 @@ function EmployeeExportButtons({ emp }: { emp: Employee }) {
     try {
       const { front, back } = await captureEmployeeCard(emp);
 
-      // Stitch front + back side-by-side on one canvas
-      const CARD_W = 350 * 3; // pixelRatio 3
-      const CARD_H = 230 * 3;
+      // Stitch front + back side-by-side (portrait cards)
+      const W = CARD_W * 3; // pixelRatio 3
+      const H = CARD_H * 3;
       const GAP = 24;
       const canvas = document.createElement("canvas");
-      canvas.width = CARD_W * 2 + GAP;
-      canvas.height = CARD_H;
+      canvas.width = W * 2 + GAP;
+      canvas.height = H;
       const ctx = canvas.getContext("2d")!;
       ctx.fillStyle = "#f8fafc";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -99,8 +99,8 @@ function EmployeeExportButtons({ emp }: { emp: Employee }) {
         });
 
       const [imgF, imgB] = await Promise.all([loadImg(front), loadImg(back)]);
-      ctx.drawImage(imgF, 0, 0, CARD_W, CARD_H);
-      ctx.drawImage(imgB, CARD_W + GAP, 0, CARD_W, CARD_H);
+      ctx.drawImage(imgF, 0, 0, W, H);
+      ctx.drawImage(imgB, W + GAP, 0, W, H);
 
       const a = document.createElement("a");
       a.download = `the-${safeName}.png`;
@@ -118,10 +118,13 @@ function EmployeeExportButtons({ emp }: { emp: Employee }) {
     setBusy("pdf");
     try {
       const { front, back } = await captureEmployeeCard(emp);
-      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [85.6, 54] });
-      pdf.addImage(front, "PNG", 0, 0, 85.6, 54);
-      pdf.addPage([85.6, 54], "landscape");
-      pdf.addImage(back, "PNG", 0, 0, 85.6, 54);
+      // Portrait card 54x86 mm (CR80 portrait)
+      const PDF_W = 54;
+      const PDF_H = 86;
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: [PDF_W, PDF_H] });
+      pdf.addImage(front, "PNG", 0, 0, PDF_W, PDF_H);
+      pdf.addPage([PDF_W, PDF_H], "portrait");
+      pdf.addImage(back, "PNG", 0, 0, PDF_W, PDF_H);
       pdf.save(`the-${safeName}.pdf`);
     } catch (err) {
       console.error(err);
