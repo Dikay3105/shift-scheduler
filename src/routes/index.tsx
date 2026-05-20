@@ -119,6 +119,9 @@ function AdminDashboard() {
                             <a
                                 key={index}
                                 href={item.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="h-full"
                             >
                                 {cardContent}
                             </a>

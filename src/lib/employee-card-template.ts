@@ -22,17 +22,92 @@ export async function ensureCardFonts(): Promise<void> {
   fontLoaded = true;
 }
 
+// ─── Preload tất cả <img> bên trong element trước khi capture ───────────────
+async function preloadImages(el: HTMLElement): Promise<void> {
+  const imgs = Array.from(el.querySelectorAll("img")) as HTMLImageElement[];
+  await Promise.all(
+    imgs.map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          if (img.complete && img.naturalWidth > 0) {
+            resolve();
+            return;
+          }
+          // Fetch ảnh qua proxy blob để tránh CORS
+          fetch(img.src, { mode: "cors" })
+            .then((r) => r.blob())
+            .then((blob) => {
+              const blobUrl = URL.createObjectURL(blob);
+              img.onload = () => {
+                URL.revokeObjectURL(blobUrl);
+                resolve();
+              };
+              img.onerror = () => resolve();
+              img.src = blobUrl;
+            })
+            .catch(() => resolve());
+        })
+    )
+  );
+}
+
 export async function captureCardEl(el: HTMLElement): Promise<string> {
   await ensureCardFonts();
+  await preloadImages(el);
+  await new Promise((r) => requestAnimationFrame(r));
+  await new Promise((r) => setTimeout(r, 80));
+
   const { toPng } = await import("html-to-image");
-  await new Promise((r) => setTimeout(r, 120));
+
+  // Warm-up pass
+  await toPng(el, {
+    pixelRatio: 1,
+    backgroundColor: "#FAFAFA",
+    width: CARD_W,
+    height: CARD_H,
+    skipAutoScale: true,
+  }).catch(() => { });
+
+  await new Promise((r) => setTimeout(r, 60));
+
+  // Final capture
   return toPng(el, {
     pixelRatio: 3,
     backgroundColor: "#FAFAFA",
     width: CARD_W,
     height: CARD_H,
-    fontEmbedCSS: CARD_FONT_CSS,
+    skipAutoScale: true,
+    style: { borderRadius: "20px" },
   });
+}
+
+// ─── captureOne helper ───────────────────────────────────────────────────────
+export async function captureOne(
+  front: FrontData,
+  back: BackData
+): Promise<{ front: string; back: string }> {
+  const container = document.createElement("div");
+  container.style.cssText = `
+    position: fixed; left: 0; top: 0;
+    opacity: 0; pointer-events: none; z-index: -1;
+  `;
+  document.body.appendChild(container);
+
+  try {
+    const fEl = makeFrontEl(front);
+    container.appendChild(fEl);
+    const f = await captureCardEl(fEl);
+    container.removeChild(fEl);
+
+    const bEl = makeBackEl(back);
+    container.appendChild(bEl);
+    const b = await captureCardEl(bEl);
+    container.removeChild(bEl);
+
+    return { front: f, back: b };
+  } finally {
+    document.body.removeChild(container);
+  }
 }
 
 const getInitials = (name: string) =>
@@ -44,14 +119,15 @@ const getInitials = (name: string) =>
     .join("");
 
 export type FrontData = {
-  name: string;        // Full name
-  nickname?: string;   // Short / display name
-  dob?: string;        // DD.MM.YYYY
+  name: string;
+  nickname?: string;
+  dob?: string;
   empCode: string;
   role: string;
   dept?: string;
-  company?: string;    // Side text, vertical
-  photoUrl?: string;   // optional, fallback to initials
+  company?: string;
+  photoUrl?: string;
+  logoUrl?: string;   // ← MỚI: logo công ty (base64 hoặc URL)
 };
 
 export type BackData = {
@@ -88,6 +164,19 @@ export function makeFrontEl(d: FrontData): HTMLDivElement {
     ? `<img src="${d.photoUrl}" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover;border-radius:7px;"/>`
     : `<span style="font-family:${SERIF_FAMILY};font-size:36px;font-weight:600;color:${MAROON};">${ini}</span>`;
 
+  // Logo: hiển thị ảnh nếu có, ngược lại placeholder camera
+  const logoInner = d.logoUrl
+    ? `<img src="${d.logoUrl}" crossorigin="anonymous"
+            style="width:54px;height:54px;object-fit:contain;border-radius:50%;"/>`
+    : `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+         <svg viewBox="0 0 20 20" width="22" height="22" fill="none" stroke="#C0A0A8" stroke-width="1.5">
+           <rect x="2" y="5" width="16" height="12" rx="2"/>
+           <circle cx="10" cy="11" r="3"/>
+           <path d="M7 5V4a1 1 0 011-1h4a1 1 0 011 1v1" stroke-linecap="round"/>
+         </svg>
+         <span style="font-size:7px;color:#C0A0A8;letter-spacing:.4px;text-transform:uppercase;">Logo</span>
+       </div>`;
+
   el.innerHTML = `
 <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;">
   <!-- Photo -->
@@ -116,7 +205,7 @@ export function makeFrontEl(d: FrontData): HTMLDivElement {
     ${field("Chức vụ", d.role || "Nhân viên")}
   </div>
 
-  <!-- Bottom: dept tag + logo placeholder -->
+  <!-- Bottom: dept tag + logo -->
   <div style="margin-top:auto;padding:10px 14px;display:flex;align-items:center;gap:10px;
               border-top:.5px solid #eee;min-height:76px;">
     <span style="font-size:11.5px;color:${MAROON};background:${PINK_BG};border:1px solid ${PINK_BORDER};
@@ -124,14 +213,9 @@ export function makeFrontEl(d: FrontData): HTMLDivElement {
       ${escapeHtml(d.dept || "Phòng nhân sự")}
     </span>
     <div style="width:62px;height:62px;border-radius:50%;border:1.5px solid #C0A0A8;
-                display:flex;flex-direction:column;align-items:center;justify-content:center;
-                margin-left:auto;background:#fff;flex-shrink:0;gap:2px;">
-      <svg viewBox="0 0 20 20" width="22" height="22" fill="none" stroke="#C0A0A8" stroke-width="1.5">
-        <rect x="2" y="5" width="16" height="12" rx="2"/>
-        <circle cx="10" cy="11" r="3"/>
-        <path d="M7 5V4a1 1 0 011-1h4a1 1 0 011 1v1" stroke-linecap="round"/>
-      </svg>
-      <span style="font-size:7px;color:#C0A0A8;letter-spacing:.4px;text-transform:uppercase;">Logo</span>
+                display:flex;align-items:center;justify-content:center;
+                margin-left:auto;background:#fff;flex-shrink:0;overflow:hidden;">
+      ${logoInner}
     </div>
   </div>
 </div>
@@ -165,7 +249,9 @@ export function makeBackEl(d: BackData = {}): HTMLDivElement {
   `;
 
   const company = (d.company || "CÔNG TY").toUpperCase();
-  const terms = d.terms || "Thẻ này có hiệu lực đến hết năm 2026. Nếu tìm thấy, vui lòng liên hệ công ty hoặc trả lại cho người sở hữu.";
+  const terms =
+    d.terms ||
+    "Thẻ này có hiệu lực đến hết năm 2026. Nếu tìm thấy, vui lòng liên hệ công ty hoặc trả lại cho người sở hữu.";
 
   const phone = d.phone || "0901 234 567";
   const ig = d.instagram || "@cinnamonforest";
@@ -175,14 +261,18 @@ export function makeBackEl(d: BackData = {}): HTMLDivElement {
   const fanpage = d.fanpageUrl || "https://facebook.com/cinnamonforest";
   const waUrl = d.whatsappUrl || "https://wa.me/84901234567";
 
-  const qrUrl = (data: string, color = "8B1A38") =>
-    `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=0&color=${color}&bgcolor=FFFFFF&data=${encodeURIComponent(data)}`;
+  // ← QR màu đen (000000)
+  const qrUrl = (data: string) =>
+    `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=0&color=000000&bgcolor=FFFFFF&data=${encodeURIComponent(data)}`;
 
   el.innerHTML = `
 <!-- Top brand bar -->
-<div style="background:${MAROON};height:46px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-  <span style="font-family:${SERIF_FAMILY};font-size:15px;font-weight:700;color:#fff;
-               letter-spacing:4px;text-transform:uppercase;">${escapeHtml(company)}</span>
+<div style="background:${MAROON};padding:0 20px;height:72px;display:flex;align-items:center;
+            justify-content:center;flex-shrink:0;">
+  <span style="font-family:${SERIF_FAMILY};font-size:22px;font-weight:700;color:#fff;
+               letter-spacing:6px;text-transform:uppercase;text-align:center;line-height:1.2;">
+    ${escapeHtml(company)}
+  </span>
 </div>
 
 <!-- Body -->
@@ -224,7 +314,8 @@ export function makeBackEl(d: BackData = {}): HTMLDivElement {
       <div style="width:86px;height:86px;background:#fff;border:1.5px solid ${PINK_BORDER};
                   border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;
                   box-shadow:0 2px 8px rgba(139,26,56,.1);padding:4px;">
-        <img src="${qrUrl(fanpage, '4267B2')}" crossorigin="anonymous" width="78" height="78"/>
+        <img src="${qrUrl(fanpage)}" crossorigin="anonymous" width="78" height="78"
+             style="display:block;width:78px;height:78px;"/>
       </div>
       <span style="font-size:8.5px;color:#4267B2;letter-spacing:1px;text-transform:uppercase;font-weight:700;">Fanpage</span>
     </div>
@@ -232,7 +323,8 @@ export function makeBackEl(d: BackData = {}): HTMLDivElement {
       <div style="width:86px;height:86px;background:#fff;border:1.5px solid ${PINK_BORDER};
                   border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;
                   box-shadow:0 2px 8px rgba(139,26,56,.1);padding:4px;">
-        <img src="${qrUrl(waUrl, '25D366')}" crossorigin="anonymous" width="78" height="78"/>
+        <img src="${qrUrl(waUrl)}" crossorigin="anonymous" width="78" height="78"
+             style="display:block;width:78px;height:78px;"/>
       </div>
       <span style="font-size:8.5px;color:#25D366;letter-spacing:1px;text-transform:uppercase;font-weight:700;">WhatsApp</span>
     </div>
@@ -244,7 +336,11 @@ export function makeBackEl(d: BackData = {}): HTMLDivElement {
 
 // ─── small helpers ───────────────────────────────────────────────────────────
 function escapeHtml(s: string): string {
-  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+  return String(s).replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!)
+  );
 }
 
 function field(label: string, value: string): string {

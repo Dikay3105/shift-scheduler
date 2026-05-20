@@ -57,6 +57,7 @@ function EmployeeCardPage() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkProgress, setBulkProgress] = useState("");
   const [employees, setEmployees] = useState<any[]>([]);
+  const [logoUrl, setLogoUrl] = useState<string>("");
 
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
@@ -107,6 +108,18 @@ function EmployeeCardPage() {
   }, []);
 
   const safeFile = useMemo(() => front.name.replace(/\s+/g, "_"), [front.name]);
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const result = ev.target?.result as string;
+      setLogoUrl(result); // base64 data URL
+      setFront((f) => ({ ...f, logoUrl: result }));
+    };
+    reader.readAsDataURL(file);
+  };
 
   // ── Single-card export ────────────────────────────────────────────────────
   const exportPNG = async (side: "front" | "back") => {
@@ -279,7 +292,7 @@ function EmployeeCardPage() {
             </div>
 
             {/* Bulk */}
-            <div className="mt-2 w-full max-w-[420px] rounded-2xl border-2 border-[#E8C0CC] bg-gradient-to-br from-[#F8EDF0] to-white p-4">
+            {/* <div className="mt-2 w-full max-w-[420px] rounded-2xl border-2 border-[#E8C0CC] bg-gradient-to-br from-[#F8EDF0] to-white p-4">
               <p className="mb-3 text-[10px] font-semibold uppercase tracking-[1px] text-[#8B1A38]">
                 📦 Tải tất cả thẻ ({employees.length} nhân viên)
               </p>
@@ -308,7 +321,7 @@ function EmployeeCardPage() {
                   : "📥 Tải xuống tất cả"
                 }
               </button>
-            </div>
+            </div> */}
           </div>
 
           {/* FORM */}
@@ -320,6 +333,45 @@ function EmployeeCardPage() {
             <div className="p-5">
               {tab === "front" && (
                 <div>
+                  <div className="mb-4">
+                    <label className="mb-1 block text-[10px] uppercase tracking-[0.8px] text-gray-400">
+                      Logo công ty
+                    </label>
+                    <div className="flex items-center gap-3">
+                      {/* Preview logo nhỏ */}
+                      {logoUrl ? (
+                        <img
+                          src={logoUrl}
+                          alt="logo"
+                          className="h-12 w-12 rounded-full border border-[#E8C0CC] object-contain bg-white"
+                        />
+                      ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[#E8C0CC] bg-[#F8EDF0]">
+                          <span className="text-[10px] text-[#8B1A38]">Logo</span>
+                        </div>
+                      )}
+                      <label className="cursor-pointer rounded-lg border border-[#E8C0CC] bg-[#F8EDF0] px-3 py-2 text-[11px] font-medium text-[#8B1A38] transition hover:bg-[#E8C0CC]">
+                        📁 Chọn ảnh
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleLogoUpload}
+                        />
+                      </label>
+                      {logoUrl && (
+                        <button
+                          onClick={() => {
+                            setLogoUrl("");
+                            setFront((f) => ({ ...f, logoUrl: "" }));
+                          }}
+                          className="text-[11px] text-gray-400 hover:text-red-500"
+                        >
+                          Xóa
+                        </button>
+                      )}
+                    </div>
+                  </div>
                   <p className="mb-4 text-[10px] uppercase tracking-[1px] text-[#8B1A38]">Thông tin nhân viên</p>
                   <Field label="Họ và tên" value={front.name} onChange={(v) => setFront({ ...front, name: v })} />
                   <Field label="Bí danh" value={front.nickname || ""} onChange={(v) => setFront({ ...front, nickname: v })} />
