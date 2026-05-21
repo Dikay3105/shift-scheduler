@@ -15,6 +15,7 @@ import {
   ensureCardFonts,
   type FrontData,
   type BackData,
+  getInitials,
 } from "@/lib/employee-card-template";
 
 export const Route = createFileRoute("/employeeCard")({
@@ -45,6 +46,7 @@ function EmployeeCardPage() {
   const [employees, setEmployees] = useState<any[]>([]);
   const [exportStatus, setExportStatus] = useState<{ label: string; sub: string } | null>(null);
   const [logoUrl, setLogoUrl] = useState<string>("");
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
 
   const setStatus = (label: string, sub = "") => setExportStatus({ label, sub });
   const clearStatus = () => setExportStatus(null);
@@ -157,6 +159,18 @@ function EmployeeCardPage() {
       const result = ev.target?.result as string;
       setLogoUrl(result);
       setFront((f) => ({ ...f, logoUrl: result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const result = ev.target?.result as string;
+      setAvatarUrl(result);
+      setFront((f) => ({ ...f, photoUrl: result }));
     };
     reader.readAsDataURL(file);
   };
@@ -471,6 +485,46 @@ function EmployeeCardPage() {
             <div className="p-5">
               {tab === "front" && (
                 <div>
+                  <div className="mb-4">
+                    <label className="mb-1 block text-[10px] uppercase tracking-[0.8px] text-gray-400">
+                      Ảnh đại diện
+                    </label>
+                    <div className="flex items-center gap-3">
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt="avatar"
+                          className="h-16 w-12 rounded-lg border border-[#E8C0CC] object-cover bg-white"
+                        />
+                      ) : (
+                        <div className="flex h-16 w-12 items-center justify-center rounded-lg border border-[#E8C0CC] bg-gradient-to-br from-[#F4C5CF] to-[#E8889A]">
+                          <span className="text-[18px] font-semibold text-[#8B1A38]">
+                            {getInitials(front.name)}
+                          </span>
+                        </div>
+                      )}
+                      <label className="cursor-pointer rounded-lg border border-[#E8C0CC] bg-[#F8EDF0] px-3 py-2 text-[11px] font-medium text-[#8B1A38] transition hover:bg-[#E8C0CC]">
+                        📷 Chọn ảnh
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleAvatarUpload}
+                        />
+                      </label>
+                      {avatarUrl && (
+                        <button
+                          onClick={() => {
+                            setAvatarUrl("");
+                            setFront((f) => ({ ...f, photoUrl: "" }));
+                          }}
+                          className="text-[11px] text-gray-400 hover:text-red-500"
+                        >
+                          Xóa
+                        </button>
+                      )}
+                    </div>
+                  </div>
                   <div className="mb-4">
                     <label className="mb-1 block text-[10px] uppercase tracking-[0.8px] text-gray-400">
                       Logo công ty

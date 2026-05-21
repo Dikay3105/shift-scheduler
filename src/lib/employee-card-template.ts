@@ -138,7 +138,7 @@ export async function captureOne(
   }
 }
 
-const getInitials = (name: string) =>
+export const getInitials = (name: string) =>
   (name || "?")
     .trim()
     .split(/\s+/)
