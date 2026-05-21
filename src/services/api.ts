@@ -173,4 +173,83 @@ export const scheduleApi = {
 
     return { success: true };
   },
+
+  // ============== DOCUMENTS ==============
+
+  getDocuments: async () => {
+    const res = await fetch(`${API_BASE}/documents`);
+
+    return res.json();
+  },
+
+  getDocumentById: async (id: string) => {
+    const res = await fetch(`${API_BASE}/documents/${id}`);
+
+    return res.json();
+  },
+
+  createDocument: async (data: {
+    title: string;
+    category?: string;
+    htmlContent?: string;
+    content?: any;
+    attachments?: any[];
+  }) => {
+    const res = await fetch(`${API_BASE}/documents`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    return res.json();
+  },
+
+  updateDocument: async (
+    id: string,
+    data: any
+  ) => {
+    const res = await fetch(
+      `${API_BASE}/documents/${id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      }
+    );
+
+    return res.json();
+  },
+
+  deleteDocument: async (id: string) => {
+    const res = await fetch(
+      `${API_BASE}/documents/${id}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    return res.json();
+  },
+
+  uploadDocumentFile: async (
+    file: File
+  ) => {
+    const formData = new FormData();
+
+    formData.append("file", file);
+
+    const res = await fetch(
+      `${API_BASE}/documents/upload/file`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    return res.json();
+  },
 };
