@@ -10,99 +10,127 @@ export const CARD_FONT_FAMILY = `'IBM Plex Sans', ui-sans-serif, system-ui, sans
 export const SERIF_FAMILY = `'Playfair Display', ui-serif, Georgia, serif`;
 
 let fontLoaded = false;
+let fontLoadingPromise: Promise<void> | null = null;
+
 export async function ensureCardFonts(): Promise<void> {
   if (fontLoaded) return;
-  const style = document.createElement("style");
-  style.textContent = CARD_FONT_CSS;
-  document.head.appendChild(style);
-  if ((document as any).fonts?.ready) {
-    await (document as any).fonts.ready;
+  // Deduplicate concurrent calls — chỉ chạy 1 lần dù gọi nhiều lần đồng thời
+  if (fontLoadingPromise) return fontLoadingPromise;
+
+  fontLoadingPromise = (async () => {
+    const style = document.createElement("style");
+    style.textContent = CARD_FONT_CSS;
+    document.head.appendChild(style);
+    if ((document as any).fonts?.ready) {
+      await (document as any).fonts.ready;
+    }
+    fontLoaded = true;
+  })();
+
+  return fontLoadingPromise;
+}
+
+// Pre-import html-to-image khi idle, tránh dynamic import delay lúc click
+let htmlToImagePromise: Promise<typeof import("html-to-image")> | null = null;
+
+export function preloadHtmlToImage(): void {
+  if (htmlToImagePromise) return;
+  if (typeof window === "undefined") return;
+  const schedule =
+    (window as any).requestIdleCallback ??
+    ((cb: () => void) => setTimeout(cb, 200));
+  schedule(() => {
+    htmlToImagePromise = import("html-to-image");
+  });
+}
+
+async function getHtmlToImage() {
+  if (!htmlToImagePromise) {
+    htmlToImagePromise = import("html-to-image");
   }
-  await new Promise((r) => setTimeout(r, 600));
-  fontLoaded = true;
+  return htmlToImagePromise;
 }
 
 // ─── Preload tất cả <img> bên trong element trước khi capture ───────────────
 async function preloadImages(el: HTMLElement): Promise<void> {
   const imgs = Array.from(el.querySelectorAll("img")) as HTMLImageElement[];
   await Promise.all(
-    imgs.map(
-      (img) =>
-        new Promise<void>((resolve) => {
-          if (img.complete && img.naturalWidth > 0) {
-            resolve();
-            return;
-          }
-          // Fetch ảnh qua proxy blob để tránh CORS
-          fetch(img.src, { mode: "cors" })
-            .then((r) => r.blob())
-            .then((blob) => {
-              const blobUrl = URL.createObjectURL(blob);
-              img.onload = () => {
-                URL.revokeObjectURL(blobUrl);
-                resolve();
-              };
-              img.onerror = () => resolve();
-              img.src = blobUrl;
-            })
-            .catch(() => resolve());
-        })
-    )
+    imgs.map(async (img) => {
+      try {
+        if (img.complete && img.naturalWidth > 0) return;
+        img.crossOrigin = "anonymous";
+        await new Promise<void>((resolve) => {
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+        });
+      } catch {
+        // ignore
+      }
+    })
   );
 }
 
-export async function captureCardEl(el: HTMLElement): Promise<string> {
+// skipRaf: true khi caller đã chờ rAF bên ngoài (captureOne dùng)
+export async function captureCardEl(
+  el: HTMLElement,
+  skipRaf = false
+): Promise<string> {
   await ensureCardFonts();
   await preloadImages(el);
-  await new Promise((r) => requestAnimationFrame(r));
-  await new Promise((r) => setTimeout(r, 80));
 
-  const { toPng } = await import("html-to-image");
+  if (!skipRaf) {
+    await new Promise((r) => requestAnimationFrame(r));
+    await new Promise((r) => requestAnimationFrame(r));
+  }
 
-  // Warm-up pass
-  await toPng(el, {
-    pixelRatio: 1,
-    backgroundColor: "#FAFAFA",
-    width: CARD_W,
-    height: CARD_H,
-    skipAutoScale: true,
-  }).catch(() => { });
+  const { toPng } = await getHtmlToImage();
 
-  await new Promise((r) => setTimeout(r, 60));
-
-  // Final capture
   return toPng(el, {
-    pixelRatio: 3,
+    pixelRatio: 2,
     backgroundColor: "#FAFAFA",
     width: CARD_W,
     height: CARD_H,
     skipAutoScale: true,
+    cacheBust: false,
     style: { borderRadius: "20px" },
   });
 }
 
-// ─── captureOne helper ───────────────────────────────────────────────────────
+// ─── captureOne helper — front + back song song ──────────────────────────────
 export async function captureOne(
   front: FrontData,
-  back: BackData
+  back: BackData,
+  qrCache?: { fanpageQr: string; waQr: string }
 ): Promise<{ front: string; back: string }> {
   const container = document.createElement("div");
-  container.style.cssText = `
-    position: fixed; left: 0; top: 0;
-    opacity: 0; pointer-events: none; z-index: -1;
-  `;
+  container.style.cssText =
+    "position:fixed;left:0;top:0;opacity:0;pointer-events:none;z-index:99999;display:flex;gap:8px;";
   document.body.appendChild(container);
 
   try {
-    const fEl = makeFrontEl(front);
-    container.appendChild(fEl);
-    const f = await captureCardEl(fEl);
-    container.removeChild(fEl);
+    // Tạo cả 2 element song song
+    const [fEl, bEl] = await Promise.all([
+      Promise.resolve(makeFrontEl(front)),
+      qrCache
+        ? Promise.resolve(makeBackEl(back, qrCache.fanpageQr, qrCache.waQr))
+        : makeBackElAsync(back),
+    ]);
 
-    const bEl = makeBackEl(back);
+    container.appendChild(fEl);
     container.appendChild(bEl);
-    const b = await captureCardEl(bEl);
-    container.removeChild(bEl);
+
+    // Font + image preload song song cho cả 2
+    await Promise.all([ensureCardFonts(), preloadImages(fEl), preloadImages(bEl)]);
+
+    // Chờ layout 1 lần duy nhất cho cả 2
+    await new Promise((r) => requestAnimationFrame(r));
+    await new Promise((r) => requestAnimationFrame(r));
+
+    // Capture song song
+    const [f, b] = await Promise.all([
+      captureCardEl(fEl, true /* skipRaf */),
+      captureCardEl(bEl, true /* skipRaf */),
+    ]);
 
     return { front: f, back: b };
   } finally {
@@ -127,7 +155,7 @@ export type FrontData = {
   dept?: string;
   company?: string;
   photoUrl?: string;
-  logoUrl?: string;   // ← MỚI: logo công ty (base64 hoặc URL)
+  logoUrl?: string;
 };
 
 export type BackData = {
@@ -164,7 +192,6 @@ export function makeFrontEl(d: FrontData): HTMLDivElement {
     ? `<img src="${d.photoUrl}" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover;border-radius:7px;"/>`
     : `<span style="font-family:${SERIF_FAMILY};font-size:36px;font-weight:600;color:${MAROON};">${ini}</span>`;
 
-  // Logo: hiển thị ảnh nếu có, ngược lại placeholder camera
   const logoInner = d.logoUrl
     ? `<img src="${d.logoUrl}" crossorigin="anonymous"
             style="width:54px;height:54px;object-fit:contain;border-radius:50%;"/>`
@@ -238,9 +265,34 @@ export function makeFrontEl(d: FrontData): HTMLDivElement {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BACK face
+// BACK face — async version (QR local, không fetch network)
 // ─────────────────────────────────────────────────────────────────────────────
-export function makeBackEl(d: BackData = {}): HTMLDivElement {
+export async function makeBackElAsync(d: BackData = {}): Promise<HTMLDivElement> {
+  const fanpage = d.fanpageUrl || "https://facebook.com/cinnamonforest";
+  const waUrl = d.whatsappUrl || "https://wa.me/84901234567";
+
+  let fanpageQr = "";
+  let waQr = "";
+  try {
+    const QRCode = await import("qrcode");
+    [fanpageQr, waQr] = await Promise.all([
+      QRCode.toDataURL(fanpage, { width: 78, margin: 0, color: { dark: "#000000", light: "#FFFFFF" } }),
+      QRCode.toDataURL(waUrl, { width: 78, margin: 0, color: { dark: "#000000", light: "#FFFFFF" } }),
+    ]);
+  } catch {
+    const qrUrl = (data: string) =>
+      `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=0&color=000000&bgcolor=FFFFFF&data=${encodeURIComponent(data)}`;
+    fanpageQr = qrUrl(fanpage);
+    waQr = qrUrl(waUrl);
+  }
+
+  return makeBackEl(d, fanpageQr, waQr);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BACK face — sync version (dùng khi đã có QR data URL sẵn)
+// ─────────────────────────────────────────────────────────────────────────────
+export function makeBackEl(d: BackData = {}, fanpageQr?: string, waQr?: string): HTMLDivElement {
   const el = document.createElement("div");
   el.style.cssText = `
     width:${CARD_W}px;height:${CARD_H}px;border-radius:20px;overflow:hidden;
@@ -261,9 +313,11 @@ export function makeBackEl(d: BackData = {}): HTMLDivElement {
   const fanpage = d.fanpageUrl || "https://facebook.com/cinnamonforest";
   const waUrl = d.whatsappUrl || "https://wa.me/84901234567";
 
-  // ← QR màu đen (000000)
-  const qrUrl = (data: string) =>
+  const qrServerUrl = (data: string) =>
     `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=0&color=000000&bgcolor=FFFFFF&data=${encodeURIComponent(data)}`;
+
+  const finalFanpageQr = fanpageQr || qrServerUrl(fanpage);
+  const finalWaQr = waQr || qrServerUrl(waUrl);
 
   el.innerHTML = `
 <!-- Top brand bar -->
@@ -314,7 +368,7 @@ export function makeBackEl(d: BackData = {}): HTMLDivElement {
       <div style="width:86px;height:86px;background:#fff;border:1.5px solid ${PINK_BORDER};
                   border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;
                   box-shadow:0 2px 8px rgba(139,26,56,.1);padding:4px;">
-        <img src="${qrUrl(fanpage)}" crossorigin="anonymous" width="78" height="78"
+        <img src="${finalFanpageQr}" crossorigin="anonymous" width="78" height="78"
              style="display:block;width:78px;height:78px;"/>
       </div>
       <span style="font-size:8.5px;color:#4267B2;letter-spacing:1px;text-transform:uppercase;font-weight:700;">Fanpage</span>
@@ -323,7 +377,7 @@ export function makeBackEl(d: BackData = {}): HTMLDivElement {
       <div style="width:86px;height:86px;background:#fff;border:1.5px solid ${PINK_BORDER};
                   border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;
                   box-shadow:0 2px 8px rgba(139,26,56,.1);padding:4px;">
-        <img src="${qrUrl(waUrl)}" crossorigin="anonymous" width="78" height="78"
+        <img src="${finalWaQr}" crossorigin="anonymous" width="78" height="78"
              style="display:block;width:78px;height:78px;"/>
       </div>
       <span style="font-size:8.5px;color:#25D366;letter-spacing:1px;text-transform:uppercase;font-weight:700;">WhatsApp</span>

@@ -8,7 +8,11 @@ import {
   CARD_H,
   makeFrontEl,
   makeBackEl,
+  makeBackElAsync,
   captureCardEl,
+  captureOne,
+  preloadHtmlToImage,
+  ensureCardFonts,
   type FrontData,
   type BackData,
 } from "@/lib/employee-card-template";
@@ -29,26 +33,8 @@ const BULK_OPTIONS: { v: BulkFormat; t: string; d: string }[] = [
   { v: "png-sheet", t: "1 ảnh PNG tổng hợp", d: "Tất cả thẻ trên 1 ảnh dạng lưới 2 cột." },
 ];
 
-async function captureOne(front: FrontData, back: BackData) {
-  const container = document.createElement("div");
-  container.style.cssText = "position:fixed;left:-9999px;top:0;pointer-events:none;z-index:-1;";
-  document.body.appendChild(container);
-  try {
-    const fEl = makeFrontEl(front);
-    container.appendChild(fEl);
-    const f = await captureCardEl(fEl);
-    container.removeChild(fEl);
-
-    const bEl = makeBackEl(back);
-    container.appendChild(bEl);
-    const b = await captureCardEl(bEl);
-    container.removeChild(bEl);
-
-    return { front: f, back: b };
-  } finally {
-    document.body.removeChild(container);
-  }
-}
+// Pre-load dynamic import khi browser rảnh — chạy ngay lúc module load
+preloadHtmlToImage();
 
 function EmployeeCardPage() {
   const [flipped, setFlipped] = useState(false);
@@ -57,7 +43,15 @@ function EmployeeCardPage() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkProgress, setBulkProgress] = useState("");
   const [employees, setEmployees] = useState<any[]>([]);
+  const [exportStatus, setExportStatus] = useState<{ label: string; sub: string } | null>(null);
   const [logoUrl, setLogoUrl] = useState<string>("");
+
+  const setStatus = (label: string, sub = "") => setExportStatus({ label, sub });
+  const clearStatus = () => setExportStatus(null);
+
+  // Cache QR data URLs để tránh generate lại mỗi lần click export
+  const qrCacheRef = useRef<{ fanpageQr: string; waQr: string } | null>(null);
+  const qrGeneratingRef = useRef(false);
 
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
@@ -82,7 +76,41 @@ function EmployeeCardPage() {
     whatsappUrl: "https://wa.me/84901234567",
   });
 
-  // Render preview via innerHTML using the template (so preview === exported image)
+  // ── Warm-up: font + QR + html-to-image ngay khi mount ────────────────────
+  useEffect(() => {
+    // Font warm-up — không đợi click mới load
+    ensureCardFonts();
+
+    // QR pre-generate
+    generateQrCache(back);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Invalidate + regenerate QR khi URL thay đổi
+  useEffect(() => {
+    qrCacheRef.current = null;
+    generateQrCache(back);
+  }, [back.fanpageUrl, back.whatsappUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function generateQrCache(b: BackData) {
+    if (qrGeneratingRef.current) return;
+    qrGeneratingRef.current = true;
+    try {
+      const QRCode = await import("qrcode");
+      const fanpage = b.fanpageUrl || "https://facebook.com/cinnamonforest";
+      const waUrl = b.whatsappUrl || "https://wa.me/84901234567";
+      const [fanpageQr, waQr] = await Promise.all([
+        QRCode.toDataURL(fanpage, { width: 78, margin: 0, color: { dark: "#000000", light: "#FFFFFF" } }),
+        QRCode.toDataURL(waUrl, { width: 78, margin: 0, color: { dark: "#000000", light: "#FFFFFF" } }),
+      ]);
+      qrCacheRef.current = { fanpageQr, waQr };
+    } catch {
+      // fallback: captureOne sẽ tự generate khi không có cache
+    } finally {
+      qrGeneratingRef.current = false;
+    }
+  }
+
+  // Render preview front (sync)
   useEffect(() => {
     if (frontRef.current) {
       frontRef.current.innerHTML = "";
@@ -93,14 +121,26 @@ function EmployeeCardPage() {
     }
   }, [front]);
 
+  // Render preview back (dùng cache QR nếu có, fallback async)
   useEffect(() => {
-    if (backRef.current) {
+    if (!backRef.current) return;
+    let cancelled = false;
+
+    const render = async () => {
+      // Dùng cache nếu sẵn (tránh generate QR lại)
+      const el = qrCacheRef.current
+        ? makeBackEl(back, qrCacheRef.current.fanpageQr, qrCacheRef.current.waQr)
+        : await makeBackElAsync(back);
+
+      if (cancelled || !backRef.current) return;
       backRef.current.innerHTML = "";
-      const el = makeBackEl(back);
       el.style.border = "none";
       el.style.borderRadius = "20px";
       backRef.current.appendChild(el);
-    }
+    };
+
+    render();
+    return () => { cancelled = true; };
   }, [back]);
 
   useEffect(() => {
@@ -115,7 +155,7 @@ function EmployeeCardPage() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const result = ev.target?.result as string;
-      setLogoUrl(result); // base64 data URL
+      setLogoUrl(result);
       setFront((f) => ({ ...f, logoUrl: result }));
     };
     reader.readAsDataURL(file);
@@ -123,31 +163,48 @@ function EmployeeCardPage() {
 
   // ── Single-card export ────────────────────────────────────────────────────
   const exportPNG = async (side: "front" | "back") => {
-    const { front: f, back: b } = await captureOne(front, back);
-    const url = side === "front" ? f : b;
-    const a = document.createElement("a");
-    a.download = `the-${safeFile}-${side}.png`;
-    a.href = url;
-    a.click();
+    try {
+      setStatus("Đang xuất PNG", side === "front" ? "Render mặt trước" : "Render mặt sau");
+      const { front: f, back: b } = await captureOne(front, back, qrCacheRef.current ?? undefined);
+      const url = side === "front" ? f : b;
+      if (!url) { alert("Không tạo được ảnh"); return; }
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `the-${safeFile}-${side}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error(err);
+      alert("Xuất PNG thất bại: " + err);
+    } finally {
+      clearStatus();
+    }
   };
 
   const exportPDF = async () => {
-    const { front: f, back: b } = await captureOne(front, back);
-    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: [PDF_W, PDF_H] });
-    pdf.addImage(f, "PNG", 0, 0, PDF_W, PDF_H);
-    pdf.addPage([PDF_W, PDF_H], "portrait");
-    pdf.addImage(b, "PNG", 0, 0, PDF_W, PDF_H);
-    pdf.save(`the-${safeFile}.pdf`);
+    try {
+      setStatus("Đang chụp thẻ", "Render mặt trước & mặt sau");
+      const { front: f, back: b } = await captureOne(front, back, qrCacheRef.current ?? undefined);
+      setStatus("Đang tạo file PDF", "Gần xong rồi...");
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: [PDF_W, PDF_H] });
+      pdf.addImage(f, "PNG", 0, 0, PDF_W, PDF_H);
+      pdf.addPage([PDF_W, PDF_H], "portrait");
+      pdf.addImage(b, "PNG", 0, 0, PDF_W, PDF_H);
+      pdf.save(`the-${safeFile}.pdf`);
+    } catch (err) {
+      console.error(err);
+      alert("Xuất PDF thất bại: " + err);
+    } finally {
+      clearStatus();
+    }
   };
 
   // ── Bulk export ───────────────────────────────────────────────────────────
   const captureAll = async (onProgress: (m: string) => void) => {
     const res = await scheduleApi.getEmployees();
     const emps: any[] = res.data || [];
-    if (!emps.length) {
-      alert("Không có nhân viên nào!");
-      return null;
-    }
+    if (!emps.length) { alert("Không có nhân viên nào!"); return null; }
 
     const out: { name: string; front: string; back: string }[] = [];
     for (let i = 0; i < emps.length; i++) {
@@ -162,6 +219,7 @@ function EmployeeCardPage() {
           company: front.company,
         },
         back,
+        qrCacheRef.current ?? undefined,
       );
       out.push({ name: emp.fullName, front: f, back: b });
     }
@@ -234,10 +292,13 @@ function EmployeeCardPage() {
   const exportAll = async () => {
     setBulkBusy(true);
     try {
-      setBulkProgress("Đang tải danh sách nhân viên...");
-      const cards = await captureAll(setBulkProgress);
+      setStatus("Đang tải danh sách", "Kết nối server...");
+      const cards = await captureAll((msg) => {
+        setBulkProgress(msg);
+        setStatus("Đang xuất thẻ nhân viên", msg);
+      });
       if (!cards) return;
-      setBulkProgress("Đang tạo file...");
+      setStatus("Đang tạo file", bulkFormat === "pdf" ? "Ghép PDF..." : bulkFormat === "png-zip" ? "Nén ZIP..." : "Ghép ảnh lưới...");
       if (bulkFormat === "pdf") await doExportPDF(cards);
       else if (bulkFormat === "png-zip") await doExportZip(cards);
       else await doExportSheet(cards);
@@ -247,12 +308,89 @@ function EmployeeCardPage() {
     } finally {
       setBulkBusy(false);
       setBulkProgress("");
+      clearStatus();
     }
   };
 
   return (
     <div className="min-h-screen bg-muted/30">
       <AdminHeader title="Employee Card" description="Thiết kế và xuất thẻ nhân viên" backTo="/" />
+
+      {/* ── Loading overlay ── */}
+      {exportStatus && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 9999,
+          background: "rgba(26,10,16,0.55)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          animation: "fadeIn .2s ease",
+        }}>
+          <style>{`
+            @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+            @keyframes spin{to{transform:rotate(360deg)}}
+            @keyframes pulse-f{0%,100%{transform:translateX(-10px) rotate(-6deg) scale(1)}50%{transform:translateX(-13px) rotate(-8deg) scale(1.04)}}
+            @keyframes pulse-b{0%,100%{transform:translateX(10px) rotate(6deg) scale(1)}50%{transform:translateX(13px) rotate(8deg) scale(1.04)}}
+            @keyframes dot{0%,80%,100%{opacity:0}40%{opacity:1}}
+            .exp-dot span{display:inline-block;animation:dot 1.2s ease-in-out infinite;opacity:0}
+            .exp-dot span:nth-child(2){animation-delay:.2s}
+            .exp-dot span:nth-child(3){animation-delay:.4s}
+          `}</style>
+          <div style={{
+            background: "#fff",
+            borderRadius: 20,
+            border: "1.5px solid #E8C0CC",
+            padding: "2rem 2.5rem",
+            display: "flex", flexDirection: "column",
+            alignItems: "center", gap: "1.25rem",
+            minWidth: 260, maxWidth: 320,
+            boxShadow: "0 24px 64px rgba(26,10,16,.25)",
+          }}>
+            {/* Animated card icon */}
+            <div style={{ position: "relative", width: 72, height: 112 }}>
+              <div style={{
+                position: "absolute", width: 72, height: 112,
+                borderRadius: 8, background: "#8B1A38",
+                border: "1.5px solid #6A1229",
+                animation: "pulse-b 1.2s ease-in-out infinite .6s",
+                transform: "translateX(10px) rotate(6deg)",
+              }} />
+              <div style={{
+                position: "absolute", width: 72, height: 112,
+                borderRadius: 8,
+                background: "linear-gradient(135deg,#F8EDF0,#fff)",
+                border: "1.5px solid #E8C0CC",
+                animation: "pulse-f 1.2s ease-in-out infinite",
+                transform: "translateX(-10px) rotate(-6deg)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <div style={{
+                  width: 28, height: 36, borderRadius: 3,
+                  background: "linear-gradient(135deg,#F4C5CF,#E8889A)", opacity: .7,
+                }} />
+              </div>
+            </div>
+
+            {/* Spinner */}
+            <div style={{
+              width: 28, height: 28,
+              border: "2.5px solid #E8C0CC",
+              borderTopColor: "#8B1A38",
+              borderRadius: "50%",
+              animation: "spin .7s linear infinite",
+            }} />
+
+            {/* Label */}
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 14, fontWeight: 500, color: "#1A0A10", marginBottom: 4 }}>
+                {exportStatus.label}
+                <span className="exp-dot"><span>.</span><span>.</span><span>.</span></span>
+              </div>
+              {exportStatus.sub && (
+                <div style={{ fontSize: 12, color: "#999" }}>{exportStatus.sub}</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="min-h-screen bg-white px-4 py-10">
         <style>{`
@@ -280,18 +418,18 @@ function EmployeeCardPage() {
             </p>
 
             <div className="flex flex-wrap justify-center gap-2">
-              <button onClick={() => exportPNG("front")} className="flex items-center gap-1.5 rounded-lg border border-[#E8C0CC] bg-[#F8EDF0] px-3 py-2 text-[11px] font-medium text-[#8B1A38] transition hover:bg-[#E8C0CC]">
+              <button onClick={() => exportPNG("front")} className="cursor-pointer flex items-center gap-1.5 rounded-lg border border-[#E8C0CC] bg-[#F8EDF0] px-3 py-2 text-[11px] font-medium text-[#8B1A38] transition hover:bg-[#E8C0CC]">
                 🖼 PNG mặt trước
               </button>
-              <button onClick={() => exportPNG("back")} className="flex items-center gap-1.5 rounded-lg border border-[#E8C0CC] bg-[#F8EDF0] px-3 py-2 text-[11px] font-medium text-[#8B1A38] transition hover:bg-[#E8C0CC]">
+              <button onClick={() => exportPNG("back")} className="cursor-pointer flex items-center gap-1.5 rounded-lg border border-[#E8C0CC] bg-[#F8EDF0] px-3 py-2 text-[11px] font-medium text-[#8B1A38] transition hover:bg-[#E8C0CC]">
                 🖼 PNG mặt sau
               </button>
-              <button onClick={exportPDF} className="flex items-center gap-1.5 rounded-lg bg-[#8B1A38] px-3 py-2 text-[11px] font-medium text-white transition hover:bg-[#6A1229]">
+              <button onClick={exportPDF} className="cursor-pointer flex items-center gap-1.5 rounded-lg bg-[#8B1A38] px-3 py-2 text-[11px] font-medium text-white transition hover:bg-[#6A1229]">
                 📄 PDF thẻ này
               </button>
             </div>
 
-            {/* Bulk */}
+            {/* Bulk — bỏ comment nếu muốn dùng */}
             {/* <div className="mt-2 w-full max-w-[420px] rounded-2xl border-2 border-[#E8C0CC] bg-gradient-to-br from-[#F8EDF0] to-white p-4">
               <p className="mb-3 text-[10px] font-semibold uppercase tracking-[1px] text-[#8B1A38]">
                 📦 Tải tất cả thẻ ({employees.length} nhân viên)
@@ -338,7 +476,6 @@ function EmployeeCardPage() {
                       Logo công ty
                     </label>
                     <div className="flex items-center gap-3">
-                      {/* Preview logo nhỏ */}
                       {logoUrl ? (
                         <img
                           src={logoUrl}
