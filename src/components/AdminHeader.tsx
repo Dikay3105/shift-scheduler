@@ -106,8 +106,8 @@ function NotificationPanel({
                         key={t}
                         onClick={() => setTab(t)}
                         className={`flex-1 py-2 text-[13px] transition-colors ${tab === t
-                                ? "border-b-2 border-foreground font-medium text-foreground"
-                                : "text-muted-foreground hover:text-foreground"
+                            ? "border-b-2 border-foreground font-medium text-foreground"
+                            : "text-muted-foreground hover:text-foreground"
                             }`}
                     >
                         {t === "all" ? "Tất cả" : "Chưa đọc"}
@@ -127,14 +127,25 @@ function NotificationPanel({
                         Không có thông báo nào
                     </div>
                 ) : (
-                    visible.map((n) => (
-                        <NotificationItem
-                            key={n._id}
-                            notification={n}
-                            onMarkRead={onMarkRead}
-                            onDelete={onDelete}
-                        />
-                    ))
+                    visible.map((n) => {
+                        const isLocked = n.canMarkAsRead === false;
+                        return n.link ? (
+                            <a key={n._id} href={n.link} target="_blank" rel="noopener noreferrer" className="block cursor-pointer">
+                                <NotificationItem
+                                    notification={n}
+                                    onMarkRead={isLocked ? undefined : onMarkRead}
+                                    onDelete={isLocked ? undefined : onDelete}
+                                />
+                            </a>
+                        ) : (
+                            <NotificationItem
+                                key={n._id}
+                                notification={n}
+                                onMarkRead={isLocked ? undefined : onMarkRead}
+                                onDelete={isLocked ? undefined : onDelete}
+                            />
+                        );
+                    })
                 )}
             </div>
 
@@ -155,8 +166,8 @@ function NotificationPanel({
 
 type NotificationItemProps = {
     notification: Notification;
-    onMarkRead: (id: string) => void;
-    onDelete: (id: string) => void;
+    onMarkRead?: (id: string) => void;  // optional
+    onDelete?: (id: string) => void;    // optional
 };
 
 function NotificationItem({
@@ -168,7 +179,11 @@ function NotificationItem({
 
     return (
         <div
-            className={`group relative flex gap-3 border-b border-border px-4 py-3 transition-colors last:border-0 ${!n.isRead ? "bg-blue-50/60 dark:bg-blue-950/20" : "hover:bg-muted/40"
+            className={`group relative flex gap-3 border-b border-border px-4 py-3 transition-colors last:border-0 ${n.priority === 2
+                ? "bg-red-50/80 dark:bg-red-950/20 border-l-2 border-l-red-500"
+                : !n.isRead
+                    ? "bg-blue-50/60 dark:bg-blue-950/20"
+                    : "hover:bg-muted/40"
                 }`}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
@@ -203,14 +218,6 @@ function NotificationItem({
                     <span className="text-[11px] text-muted-foreground/70">
                         {relativeTime(n.scheduledAt)}
                     </span>
-                    {n.link && (
-                        <a
-                            href={n.link}
-                            className="flex items-center gap-0.5 text-[11px] text-blue-500 hover:underline"
-                        >
-                            Xem <ExternalLink className="h-2.5 w-2.5" />
-                        </a>
-                    )}
                     {!n.isRead && (
                         <span className="ml-auto h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
                     )}
@@ -220,7 +227,7 @@ function NotificationItem({
             {/* Actions (hover) */}
             {hovered && (
                 <div className="absolute right-3 top-3 flex gap-1">
-                    {n.canMarkAsRead && !n.isRead && (
+                    {onMarkRead && !n.isRead && (
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -232,16 +239,18 @@ function NotificationItem({
                             <Check className="h-3 w-3" />
                         </button>
                     )}
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete(n._id);
-                        }}
-                        title="Xóa"
-                        className="flex h-6 w-6 items-center justify-center rounded-md border border-border bg-background text-muted-foreground shadow-sm hover:bg-muted hover:text-destructive"
-                    >
-                        <Trash2 className="h-3 w-3" />
-                    </button>
+                    {onDelete && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(n._id);
+                            }}
+                            title="Xóa"
+                            className="flex h-6 w-6 items-center justify-center rounded-md border border-border bg-background text-muted-foreground shadow-sm hover:bg-muted hover:text-destructive"
+                        >
+                            <Trash2 className="h-3 w-3" />
+                        </button>
+                    )}
                 </div>
             )}
         </div>
@@ -311,7 +320,7 @@ export default function AdminHeader({ title, description, backTo }: AdminHeaderP
                         >
                             <Bell className="h-4 w-4" />
                             {unreadCount > 0 && (
-                                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white">
+                                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white ring-2 ring-background animate-pulse">
                                     {unreadCount > 9 ? "9+" : unreadCount}
                                 </span>
                             )}
