@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 
 import { useDocuments } from "@/hooks/use-document";
-import WordEditor from "@/components/wordeditor";
+import WordEditor from "@/components/WordEditor";
 
 export const Route = createFileRoute("/rule")({
     component: RulesPage,
