@@ -159,7 +159,7 @@ function RulesPage() {
         // Excel → backend convert sang HTML
         if (ext === "xlsx" || ext === "xls") {
             setPreviewUrl(
-                API_BASE + `api/documents/preview/${encodeURIComponent(filename)}`
+                API_BASE + `/documents/preview/${encodeURIComponent(filename)}`
             );
             setPreviewLoading(false);
             return;
