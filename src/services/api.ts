@@ -198,13 +198,6 @@ export const scheduleApi = {
     return res.json();
   },
 
-  deleteDocument: async (id: string) => {
-    const res = await fetch(`${API_BASE}/documents/${id}`, {
-      method: "DELETE",
-    });
-    return res.json();
-  },
-
   uploadDocumentFile: async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -212,6 +205,25 @@ export const scheduleApi = {
       method: "POST",
       body: formData,
     });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Upload thất bại");
+    }
+
+    return res.json();
+  },
+
+  deleteDocument: async (id: string) => {
+    const res = await fetch(`${API_BASE}/documents/${id}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Xóa thất bại");
+    }
+
     return res.json();
   },
 
