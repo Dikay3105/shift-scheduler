@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ScheduleRouteImport } from './routes/schedule'
+import { Route as RuleRouteImport } from './routes/rule'
 import { Route as EmployeeCardRouteImport } from './routes/employeeCard'
 import { Route as AvatarRouteImport } from './routes/avatar'
 import { Route as IndexRouteImport } from './routes/index'
@@ -17,6 +18,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const ScheduleRoute = ScheduleRouteImport.update({
   id: '/schedule',
   path: '/schedule',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RuleRoute = RuleRouteImport.update({
+  id: '/rule',
+  path: '/rule',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EmployeeCardRoute = EmployeeCardRouteImport.update({
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/avatar': typeof AvatarRoute
   '/employeeCard': typeof EmployeeCardRoute
+  '/rule': typeof RuleRoute
   '/schedule': typeof ScheduleRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/avatar': typeof AvatarRoute
   '/employeeCard': typeof EmployeeCardRoute
+  '/rule': typeof RuleRoute
   '/schedule': typeof ScheduleRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,22 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/avatar': typeof AvatarRoute
   '/employeeCard': typeof EmployeeCardRoute
+  '/rule': typeof RuleRoute
   '/schedule': typeof ScheduleRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/avatar' | '/employeeCard' | '/schedule'
+  fullPaths: '/' | '/avatar' | '/employeeCard' | '/rule' | '/schedule'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/avatar' | '/employeeCard' | '/schedule'
-  id: '__root__' | '/' | '/avatar' | '/employeeCard' | '/schedule'
+  to: '/' | '/avatar' | '/employeeCard' | '/rule' | '/schedule'
+  id: '__root__' | '/' | '/avatar' | '/employeeCard' | '/rule' | '/schedule'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AvatarRoute: typeof AvatarRoute
   EmployeeCardRoute: typeof EmployeeCardRoute
+  RuleRoute: typeof RuleRoute
   ScheduleRoute: typeof ScheduleRoute
 }
 
@@ -76,6 +86,13 @@ declare module '@tanstack/react-router' {
       path: '/schedule'
       fullPath: '/schedule'
       preLoaderRoute: typeof ScheduleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rule': {
+      id: '/rule'
+      path: '/rule'
+      fullPath: '/rule'
+      preLoaderRoute: typeof RuleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/employeeCard': {
@@ -106,6 +123,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AvatarRoute: AvatarRoute,
   EmployeeCardRoute: EmployeeCardRoute,
+  RuleRoute: RuleRoute,
   ScheduleRoute: ScheduleRoute,
 }
 export const routeTree = rootRouteImport

@@ -9,7 +9,8 @@ import {
     UserCog,
     Image,
     ArrowRight,
-    Package2
+    Package2,
+    ShieldCheck,
 } from "lucide-react";
 import AdminHeader from "@/components/AdminHeader";
 
@@ -26,13 +27,13 @@ function AdminDashboard() {
             link: "/schedule",
             gradient: "from-blue-500 to-cyan-500",
         },
-        // {
-        //     title: "Nhân Viên",
-        //     description: "Quản lý thông tin nhân viên",
-        //     icon: Users,
-        //     link: "/admin/employees",
-        //     gradient: "from-emerald-500 to-green-500",
-        // },
+        {
+            title: "Nội quy và Quy định",
+            description: "Xem và cập nhật nội quy công ty, quy định làm việc",
+            icon: ShieldCheck,
+            link: "/rule",
+            gradient: "from-emerald-500 to-green-500",
+        },
         {
             title: "Quản Lý Kho",
             description: "Quản lý nhập xuất tồn kho theo ngày",
