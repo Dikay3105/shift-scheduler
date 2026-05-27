@@ -25,6 +25,9 @@ import {
     Trash2,
     X,
     Loader2,
+    Filter,
+    BookOpen,
+    Scale,
 } from "lucide-react";
 
 import { useDocuments } from "@/hooks/use-document";
@@ -32,6 +35,8 @@ import { useDocuments } from "@/hooks/use-document";
 export const Route = createFileRoute("/rule")({
     component: RulesPage,
 });
+
+const CATEGORIES = ["Tất cả", "Văn bản nội bộ", "Nội quy"];
 
 function RulesPage() {
     const {
@@ -43,6 +48,7 @@ function RulesPage() {
     } = useDocuments();
 
     const [search, setSearch] = useState("");
+    const [activeCategory, setActiveCategory] = useState("Tất cả");
     const API_BASE = import.meta.env.VITE_API_BASE_URL;
     const [uploading, setUploading] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -50,24 +56,36 @@ function RulesPage() {
     const [previewTitle, setPreviewTitle] = useState<string>("");
     const [previewLoading, setPreviewLoading] = useState(false);
 
+    // Upload modal state
+    const [uploadModalOpen, setUploadModalOpen] = useState(false);
+    const [pendingFile, setPendingFile] = useState<File | null>(null);
+    const [uploadTitle, setUploadTitle] = useState("");
+    const [uploadCategory, setUploadCategory] = useState("Văn bản nội bộ");
+
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const filteredDocs = useMemo(() => {
-        return documents.filter((doc) =>
-            doc.title.toLowerCase().includes(search.toLowerCase())
-        );
-    }, [documents, search]);
+        return documents.filter((doc) => {
+            const matchSearch = doc.title.toLowerCase().includes(search.toLowerCase());
+            const matchCategory =
+                activeCategory === "Tất cả" || doc.category === activeCategory;
+            return matchSearch && matchCategory;
+        });
+    }, [documents, search, activeCategory]);
 
-    const renderFileIcon = (type: string) => {
-        const t = type.toLowerCase();
-        if (t.includes("pdf")) return <FileText className="h-6 w-6" />;
-        if (
-            t.includes("sheet") ||
-            t.includes("excel") ||
-            t.includes("xlsx") ||
-            t.includes("spreadsheet")
-        ) return <FileSpreadsheet className="h-6 w-6" />;
-        return <File className="h-6 w-6" />;
+    const renderCategoryIcon = (category: string) => {
+        if (category === "Nội quy") {
+            return (
+                <div className="rounded-2xl bg-red-50 p-4 text-red-500">
+                    <Scale className="h-6 w-6" />
+                </div>
+            );
+        }
+        return (
+            <div className="rounded-2xl bg-emerald-50 p-4 text-emerald-600">
+                <BookOpen className="h-6 w-6" />
+            </div>
+        );
     };
 
     const handleDownload = async (url: string, filename: string) => {
@@ -89,24 +107,48 @@ function RulesPage() {
         }
     };
 
-    const handleUploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Step 1: pick file → open modal
+    const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        if (fileInputRef.current) fileInputRef.current.value = "";
+
+        // Strip extension from original name to prefill title
+        const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+        setPendingFile(file);
+        setUploadTitle(nameWithoutExt);
+        setUploadCategory("Văn bản nội bộ");
+        setUploadModalOpen(true);
+
+        // Reset sau khi đã lưu file, để có thể chọn lại cùng file lần sau
+        e.target.value = "";
+    };
+
+    // Step 2: confirm upload
+    const handleConfirmUpload = async () => {
+        if (!pendingFile) return;
+        const title = uploadTitle.trim() || pendingFile.name;
 
         try {
             setUploading(true);
-            const attachment = await uploadFile(file);
+            setUploadModalOpen(false);
+            const attachment = await uploadFile(pendingFile);
             await createDocument({
-                title: file.name,
-                category: "File Upload",
+                title,
+                category: uploadCategory,
                 attachments: [attachment],
             });
         } catch (error) {
             console.error("Upload error:", error);
         } finally {
             setUploading(false);
+            setPendingFile(null);
         }
+    };
+
+    const handleCancelUpload = () => {
+        setUploadModalOpen(false);
+        setPendingFile(null);
+        setUploadTitle("");
     };
 
     const handleDelete = async (id: string) => {
@@ -123,12 +165,11 @@ function RulesPage() {
     const handlePreview = async (fileUrl: string, fileType: string, title: string) => {
         setPreviewTitle(title);
         setPreviewLoading(true);
-        setPreviewUrl("loading"); // mở modal ngay để show loading
+        setPreviewUrl("loading");
 
         const filename = decodeURIComponent(fileUrl.split("/").pop() || "");
         const ext = filename.split(".").pop()?.toLowerCase() || "";
 
-        // Word → dùng Google Docs Viewer với URL Supabase public (đẹp hơn mammoth)
         if (ext === "docx" || ext === "doc") {
             const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`;
             setPreviewUrl(viewerUrl);
@@ -136,7 +177,6 @@ function RulesPage() {
             return;
         }
 
-        // PDF → fetch về blob để tránh X-Frame-Options
         if (ext === "pdf") {
             try {
                 const res = await fetch(
@@ -156,7 +196,6 @@ function RulesPage() {
             return;
         }
 
-        // Excel → backend convert sang HTML
         if (ext === "xlsx" || ext === "xls") {
             setPreviewUrl(
                 API_BASE + `/documents/preview/${encodeURIComponent(filename)}`
@@ -165,14 +204,12 @@ function RulesPage() {
             return;
         }
 
-        // Fallback
         setPreviewUrl(null);
         setPreviewLoading(false);
         window.open(fileUrl, "_blank");
     };
 
     const closePreview = () => {
-        // Revoke blob URL nếu là PDF
         if (previewUrl && previewUrl.startsWith("blob:")) {
             URL.revokeObjectURL(previewUrl);
         }
@@ -220,12 +257,17 @@ function RulesPage() {
                                     hidden
                                     ref={fileInputRef}
                                     accept=".pdf,.doc,.docx,.xls,.xlsx"
-                                    onChange={handleUploadFile}
+                                    onChange={handleFileSelected}
                                 />
                                 <Button
                                     variant="outline"
                                     className="rounded-2xl"
-                                    onClick={() => fileInputRef.current?.click()}
+                                    onClick={() => {
+                                        if (fileInputRef.current) {
+                                            fileInputRef.current.value = "";
+                                            fileInputRef.current.click();
+                                        }
+                                    }}
                                     disabled={uploading}
                                 >
                                     {uploading ? (
@@ -238,8 +280,25 @@ function RulesPage() {
                             </div>
                         </div>
 
+                        {/* Category filter */}
+                        <div className="mt-4 flex flex-wrap items-center gap-2">
+                            <Filter className="h-4 w-4 text-muted-foreground" />
+                            {CATEGORIES.map((cat) => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setActiveCategory(cat)}
+                                    className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${activeCategory === cat
+                                            ? "bg-emerald-600 text-white shadow-sm"
+                                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                                        }`}
+                                >
+                                    {cat}
+                                </button>
+                            ))}
+                        </div>
+
                         {/* Supported formats */}
-                        <div className="mt-4 flex flex-wrap gap-2">
+                        <div className="mt-3 flex flex-wrap gap-2">
                             {["PDF (.pdf)", "Word (.docx)", "Excel (.xlsx)"].map((f) => (
                                 <span
                                     key={f}
@@ -282,9 +341,7 @@ function RulesPage() {
                                     <CardContent className="p-6">
                                         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                                             <div className="flex items-start gap-4">
-                                                <div className="rounded-2xl bg-muted p-4 text-muted-foreground">
-                                                    {renderFileIcon(attachment?.fileType || "doc")}
-                                                </div>
+                                                {renderCategoryIcon(doc.category)}
 
                                                 <div>
                                                     <div className="mb-2 flex flex-wrap items-center gap-3">
@@ -359,6 +416,100 @@ function RulesPage() {
                 </div>
             </main>
 
+            {/* Upload Modal */}
+            {uploadModalOpen && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) handleCancelUpload();
+                    }}
+                >
+                    <div className="w-full max-w-md rounded-3xl bg-white shadow-2xl">
+                        {/* Header */}
+                        <div className="flex items-center justify-between border-b px-6 py-4">
+                            <h3 className="text-lg font-semibold">Thông tin tài liệu</h3>
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="rounded-xl"
+                                onClick={handleCancelUpload}
+                            >
+                                <X className="h-5 w-5" />
+                            </Button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="space-y-5 px-6 py-5">
+                            {/* File info */}
+                            {pendingFile && (
+                                <div className="flex items-center gap-3 rounded-2xl bg-muted px-4 py-3">
+                                    <FileText className="h-5 w-5 shrink-0 text-emerald-600" />
+                                    <div className="min-w-0">
+                                        <p className="truncate text-sm font-medium">{pendingFile.name}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {(pendingFile.size / 1024).toFixed(0)} KB
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Title */}
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium">
+                                    Tên tài liệu <span className="text-red-500">*</span>
+                                </label>
+                                <Input
+                                    placeholder="Nhập tên tài liệu..."
+                                    value={uploadTitle}
+                                    onChange={(e) => setUploadTitle(e.target.value)}
+                                    className="rounded-xl"
+                                    autoFocus
+                                />
+                            </div>
+
+                            {/* Category */}
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium">Danh mục</label>
+                                <div className="flex gap-2">
+                                    {CATEGORIES.filter((c) => c !== "Tất cả").map((cat) => (
+                                        <button
+                                            key={cat}
+                                            type="button"
+                                            onClick={() => setUploadCategory(cat)}
+                                            className={`flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${uploadCategory === cat
+                                                    ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                                                    : "border-border bg-background text-muted-foreground hover:bg-muted"
+                                                }`}
+                                        >
+                                            {cat}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex gap-3 border-t px-6 py-4">
+                            <Button
+                                variant="outline"
+                                className="flex-1 rounded-2xl"
+                                onClick={handleCancelUpload}
+                            >
+                                Hủy
+                            </Button>
+                            <Button
+                                className="flex-1 rounded-2xl bg-emerald-600 hover:bg-emerald-700"
+                                onClick={handleConfirmUpload}
+                                disabled={!uploadTitle.trim()}
+                            >
+                                <Upload className="mr-2 h-4 w-4" />
+                                Xác nhận upload
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Preview Modal */}
             {previewUrl && (
                 <div
@@ -381,7 +532,6 @@ function RulesPage() {
                             </Button>
                         </div>
 
-                        {/* Loading overlay */}
                         {previewLoading ? (
                             <div className="flex flex-1 flex-col items-center justify-center gap-4 text-muted-foreground">
                                 <Loader2 className="h-10 w-10 animate-spin text-emerald-500" />

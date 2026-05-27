@@ -38,7 +38,7 @@ function AdminDashboard() {
             title: "Quản Lý Kho",
             description: "Quản lý nhập xuất tồn kho theo ngày",
             icon: Package2,
-            link: "https://inventorymanagement.dikay3105.workers.dev/",
+            link: "https://inventory.cinnamonforest.com/",
             gradient: "from-indigo-500 to-blue-500",
             external: true,
         },

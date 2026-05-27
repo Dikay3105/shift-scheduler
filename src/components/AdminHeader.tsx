@@ -89,14 +89,14 @@ function NotificationPanel({
                         </span>
                     )}
                 </div>
-                {unreadCount > 0 && (
+                {/* {unreadCount > 0 && (
                     <button
                         onClick={onMarkAllRead}
                         className="text-xs text-blue-500 hover:text-blue-600 hover:underline"
                     >
                         Đánh dấu tất cả đã đọc
                     </button>
-                )}
+                )} */}
             </div>
 
             {/* Tabs */}
