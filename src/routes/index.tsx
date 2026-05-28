@@ -122,11 +122,10 @@ function AdminDashboard() {
                                 type="button"
                                 className="h-full text-left"
                                 onClick={() => {
-                                    const w = window.open(item.link, "_blank");
-
-                                    if (w) {
-                                        w.name = "inventory_admin";
-                                    }
+                                    window.open(
+                                        item.link,
+                                        "inventory_admin"
+                                    );
                                 }}
                             >
                                 {cardContent}
