@@ -117,15 +117,20 @@ function AdminDashboard() {
                         );
 
                         return item.external ? (
-                            <a
+                            <button
                                 key={index}
-                                href={item.link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="h-full"
+                                type="button"
+                                className="h-full text-left"
+                                onClick={() => {
+                                    const w = window.open(item.link, "_blank");
+
+                                    if (w) {
+                                        w.name = "inventory_admin";
+                                    }
+                                }}
                             >
                                 {cardContent}
-                            </a>
+                            </button>
                         ) : (
                             <Link key={index} to={item.link}>
                                 {cardContent}
