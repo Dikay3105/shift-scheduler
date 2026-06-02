@@ -11,6 +11,7 @@ import {
     ArrowRight,
     Package2,
     ShieldCheck,
+    Sparkles,
 } from "lucide-react";
 import AdminHeader from "@/components/AdminHeader";
 
@@ -55,6 +56,13 @@ function AdminDashboard() {
             icon: Image,
             link: "/avatar",
             gradient: "from-violet-500 to-purple-500",
+        },
+        {
+            title: "Tạo Content AI",
+            description: "Sinh bài đăng Facebook từ sản phẩm với AI",
+            icon: Sparkles,
+            link: "/aiContent",
+            gradient: "from-pink-500 to-rose-500",
         },
     ];
 

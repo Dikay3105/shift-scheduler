@@ -13,6 +13,7 @@ import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as RuleRouteImport } from './routes/rule'
 import { Route as EmployeeCardRouteImport } from './routes/employeeCard'
 import { Route as AvatarRouteImport } from './routes/avatar'
+import { Route as AiContentRouteImport } from './routes/aiContent'
 import { Route as IndexRouteImport } from './routes/index'
 
 const ScheduleRoute = ScheduleRouteImport.update({
@@ -35,6 +36,11 @@ const AvatarRoute = AvatarRouteImport.update({
   path: '/avatar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AiContentRoute = AiContentRouteImport.update({
+  id: '/aiContent',
+  path: '/aiContent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -43,6 +49,7 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/aiContent': typeof AiContentRoute
   '/avatar': typeof AvatarRoute
   '/employeeCard': typeof EmployeeCardRoute
   '/rule': typeof RuleRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/aiContent': typeof AiContentRoute
   '/avatar': typeof AvatarRoute
   '/employeeCard': typeof EmployeeCardRoute
   '/rule': typeof RuleRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/aiContent': typeof AiContentRoute
   '/avatar': typeof AvatarRoute
   '/employeeCard': typeof EmployeeCardRoute
   '/rule': typeof RuleRoute
@@ -65,14 +74,28 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/avatar' | '/employeeCard' | '/rule' | '/schedule'
+  fullPaths:
+    | '/'
+    | '/aiContent'
+    | '/avatar'
+    | '/employeeCard'
+    | '/rule'
+    | '/schedule'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/avatar' | '/employeeCard' | '/rule' | '/schedule'
-  id: '__root__' | '/' | '/avatar' | '/employeeCard' | '/rule' | '/schedule'
+  to: '/' | '/aiContent' | '/avatar' | '/employeeCard' | '/rule' | '/schedule'
+  id:
+    | '__root__'
+    | '/'
+    | '/aiContent'
+    | '/avatar'
+    | '/employeeCard'
+    | '/rule'
+    | '/schedule'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AiContentRoute: typeof AiContentRoute
   AvatarRoute: typeof AvatarRoute
   EmployeeCardRoute: typeof EmployeeCardRoute
   RuleRoute: typeof RuleRoute
@@ -109,6 +132,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AvatarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/aiContent': {
+      id: '/aiContent'
+      path: '/aiContent'
+      fullPath: '/aiContent'
+      preLoaderRoute: typeof AiContentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -121,6 +151,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AiContentRoute: AiContentRoute,
   AvatarRoute: AvatarRoute,
   EmployeeCardRoute: EmployeeCardRoute,
   RuleRoute: RuleRoute,
