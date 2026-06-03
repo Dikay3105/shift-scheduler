@@ -10,10 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsersRouteImport } from './routes/users'
-import { Route as RolesRouteImport } from './routes/roles'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as RuleRouteImport } from './routes/rule'
+import { Route as RolesRouteImport } from './routes/roles'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as EmployeeCardRouteImport } from './routes/employeeCard'
 import { Route as AvatarRouteImport } from './routes/avatar'
 import { Route as AiContentRouteImport } from './routes/aiContent'
@@ -24,16 +24,6 @@ const UsersRoute = UsersRouteImport.update({
   path: '/users',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RolesRoute = RolesRouteImport.update({
-  id: '/roles',
-  path: '/roles',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ScheduleRoute = ScheduleRouteImport.update({
   id: '/schedule',
   path: '/schedule',
@@ -42,6 +32,16 @@ const ScheduleRoute = ScheduleRouteImport.update({
 const RuleRoute = RuleRouteImport.update({
   id: '/rule',
   path: '/rule',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RolesRoute = RolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EmployeeCardRoute = EmployeeCardRouteImport.update({
@@ -70,10 +70,10 @@ export interface FileRoutesByFullPath {
   '/aiContent': typeof AiContentRoute
   '/avatar': typeof AvatarRoute
   '/employeeCard': typeof EmployeeCardRoute
-  '/rule': typeof RuleRoute
-  '/schedule': typeof ScheduleRoute
   '/login': typeof LoginRoute
   '/roles': typeof RolesRoute
+  '/rule': typeof RuleRoute
+  '/schedule': typeof ScheduleRoute
   '/users': typeof UsersRoute
 }
 export interface FileRoutesByTo {
@@ -81,10 +81,10 @@ export interface FileRoutesByTo {
   '/aiContent': typeof AiContentRoute
   '/avatar': typeof AvatarRoute
   '/employeeCard': typeof EmployeeCardRoute
-  '/rule': typeof RuleRoute
-  '/schedule': typeof ScheduleRoute
   '/login': typeof LoginRoute
   '/roles': typeof RolesRoute
+  '/rule': typeof RuleRoute
+  '/schedule': typeof ScheduleRoute
   '/users': typeof UsersRoute
 }
 export interface FileRoutesById {
@@ -93,10 +93,10 @@ export interface FileRoutesById {
   '/aiContent': typeof AiContentRoute
   '/avatar': typeof AvatarRoute
   '/employeeCard': typeof EmployeeCardRoute
-  '/rule': typeof RuleRoute
-  '/schedule': typeof ScheduleRoute
   '/login': typeof LoginRoute
   '/roles': typeof RolesRoute
+  '/rule': typeof RuleRoute
+  '/schedule': typeof ScheduleRoute
   '/users': typeof UsersRoute
 }
 export interface FileRouteTypes {
@@ -106,10 +106,10 @@ export interface FileRouteTypes {
     | '/aiContent'
     | '/avatar'
     | '/employeeCard'
-    | '/rule'
-    | '/schedule'
     | '/login'
     | '/roles'
+    | '/rule'
+    | '/schedule'
     | '/users'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -117,10 +117,10 @@ export interface FileRouteTypes {
     | '/aiContent'
     | '/avatar'
     | '/employeeCard'
-    | '/rule'
-    | '/schedule'
     | '/login'
     | '/roles'
+    | '/rule'
+    | '/schedule'
     | '/users'
   id:
     | '__root__'
@@ -128,10 +128,10 @@ export interface FileRouteTypes {
     | '/aiContent'
     | '/avatar'
     | '/employeeCard'
-    | '/rule'
-    | '/schedule'
     | '/login'
     | '/roles'
+    | '/rule'
+    | '/schedule'
     | '/users'
   fileRoutesById: FileRoutesById
 }
@@ -140,10 +140,10 @@ export interface RootRouteChildren {
   AiContentRoute: typeof AiContentRoute
   AvatarRoute: typeof AvatarRoute
   EmployeeCardRoute: typeof EmployeeCardRoute
-  RuleRoute: typeof RuleRoute
-  ScheduleRoute: typeof ScheduleRoute
   LoginRoute: typeof LoginRoute
   RolesRoute: typeof RolesRoute
+  RuleRoute: typeof RuleRoute
+  ScheduleRoute: typeof ScheduleRoute
   UsersRoute: typeof UsersRoute
 }
 
@@ -154,20 +154,6 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof UsersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/roles': {
-      id: '/roles'
-      path: '/roles'
-      fullPath: '/roles'
-      preLoaderRoute: typeof RolesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/schedule': {
@@ -182,6 +168,20 @@ declare module '@tanstack/react-router' {
       path: '/rule'
       fullPath: '/rule'
       preLoaderRoute: typeof RuleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/roles': {
+      id: '/roles'
+      path: '/roles'
+      fullPath: '/roles'
+      preLoaderRoute: typeof RolesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/employeeCard': {
@@ -220,10 +220,10 @@ const rootRouteChildren: RootRouteChildren = {
   AiContentRoute: AiContentRoute,
   AvatarRoute: AvatarRoute,
   EmployeeCardRoute: EmployeeCardRoute,
-  RuleRoute: RuleRoute,
-  ScheduleRoute: ScheduleRoute,
   LoginRoute: LoginRoute,
   RolesRoute: RolesRoute,
+  RuleRoute: RuleRoute,
+  ScheduleRoute: ScheduleRoute,
   UsersRoute: UsersRoute,
 }
 export const routeTree = rootRouteImport
