@@ -14,6 +14,7 @@ type Product = {
     name: string;
     unit?: string | null;
     active?: boolean;
+    description?: string | null;
 };
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -41,7 +42,7 @@ function AiContentPage() {
         (async () => {
             try {
                 const res = await fetch(
-                    `${SUPABASE_URL}/rest/v1/products?select=id,code,name,unit,active&order=created_at.desc`,
+                    `${SUPABASE_URL}/rest/v1/products?select=id,code,name,unit,active,description&order=created_at.desc`,
                     {
                         headers: {
                             apikey: SUPABASE_KEY,

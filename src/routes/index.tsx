@@ -21,6 +21,13 @@ export const Route = createFileRoute("/")({
 
 function AdminDashboard() {
     const adminMenuItems = [
+         {
+            title: "Quản lý nhân viên",
+            description: "Quản lý nhân viên và phân quyền",
+            icon: Users,
+            link: "/employee",
+            gradient: "from-blue-500 to-cyan-500",
+        },
         {
             title: "Lịch Làm Việc",
             description: "Quản lý ca làm và phân lịch cho nhân viên",
