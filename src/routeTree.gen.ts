@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as RuleRouteImport } from './routes/rule'
+import { Route as RolesRouteImport } from './routes/roles'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as EmployeeCardRouteImport } from './routes/employeeCard'
 import { Route as AvatarRouteImport } from './routes/avatar'
@@ -31,6 +32,11 @@ const ScheduleRoute = ScheduleRouteImport.update({
 const RuleRoute = RuleRouteImport.update({
   id: '/rule',
   path: '/rule',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RolesRoute = RolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/avatar': typeof AvatarRoute
   '/employeeCard': typeof EmployeeCardRoute
   '/login': typeof LoginRoute
+  '/roles': typeof RolesRoute
   '/rule': typeof RuleRoute
   '/schedule': typeof ScheduleRoute
   '/users': typeof UsersRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/avatar': typeof AvatarRoute
   '/employeeCard': typeof EmployeeCardRoute
   '/login': typeof LoginRoute
+  '/roles': typeof RolesRoute
   '/rule': typeof RuleRoute
   '/schedule': typeof ScheduleRoute
   '/users': typeof UsersRoute
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/avatar': typeof AvatarRoute
   '/employeeCard': typeof EmployeeCardRoute
   '/login': typeof LoginRoute
+  '/roles': typeof RolesRoute
   '/rule': typeof RuleRoute
   '/schedule': typeof ScheduleRoute
   '/users': typeof UsersRoute
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/avatar'
     | '/employeeCard'
     | '/login'
+    | '/roles'
     | '/rule'
     | '/schedule'
     | '/users'
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/avatar'
     | '/employeeCard'
     | '/login'
+    | '/roles'
     | '/rule'
     | '/schedule'
     | '/users'
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/avatar'
     | '/employeeCard'
     | '/login'
+    | '/roles'
     | '/rule'
     | '/schedule'
     | '/users'
@@ -129,6 +141,7 @@ export interface RootRouteChildren {
   AvatarRoute: typeof AvatarRoute
   EmployeeCardRoute: typeof EmployeeCardRoute
   LoginRoute: typeof LoginRoute
+  RolesRoute: typeof RolesRoute
   RuleRoute: typeof RuleRoute
   ScheduleRoute: typeof ScheduleRoute
   UsersRoute: typeof UsersRoute
@@ -155,6 +168,13 @@ declare module '@tanstack/react-router' {
       path: '/rule'
       fullPath: '/rule'
       preLoaderRoute: typeof RuleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/roles': {
+      id: '/roles'
+      path: '/roles'
+      fullPath: '/roles'
+      preLoaderRoute: typeof RolesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -201,6 +221,7 @@ const rootRouteChildren: RootRouteChildren = {
   AvatarRoute: AvatarRoute,
   EmployeeCardRoute: EmployeeCardRoute,
   LoginRoute: LoginRoute,
+  RolesRoute: RolesRoute,
   RuleRoute: RuleRoute,
   ScheduleRoute: ScheduleRoute,
   UsersRoute: UsersRoute,
