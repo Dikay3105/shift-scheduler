@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as RuleRouteImport } from './routes/rule'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as EmployeeCardRouteImport } from './routes/employeeCard'
 import { Route as AvatarRouteImport } from './routes/avatar'
 import { Route as AiContentRouteImport } from './routes/aiContent'
@@ -24,6 +25,11 @@ const ScheduleRoute = ScheduleRouteImport.update({
 const RuleRoute = RuleRouteImport.update({
   id: '/rule',
   path: '/rule',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EmployeeCardRoute = EmployeeCardRouteImport.update({
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/aiContent': typeof AiContentRoute
   '/avatar': typeof AvatarRoute
   '/employeeCard': typeof EmployeeCardRoute
+  '/login': typeof LoginRoute
   '/rule': typeof RuleRoute
   '/schedule': typeof ScheduleRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/aiContent': typeof AiContentRoute
   '/avatar': typeof AvatarRoute
   '/employeeCard': typeof EmployeeCardRoute
+  '/login': typeof LoginRoute
   '/rule': typeof RuleRoute
   '/schedule': typeof ScheduleRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/aiContent': typeof AiContentRoute
   '/avatar': typeof AvatarRoute
   '/employeeCard': typeof EmployeeCardRoute
+  '/login': typeof LoginRoute
   '/rule': typeof RuleRoute
   '/schedule': typeof ScheduleRoute
 }
@@ -79,16 +88,25 @@ export interface FileRouteTypes {
     | '/aiContent'
     | '/avatar'
     | '/employeeCard'
+    | '/login'
     | '/rule'
     | '/schedule'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/aiContent' | '/avatar' | '/employeeCard' | '/rule' | '/schedule'
+  to:
+    | '/'
+    | '/aiContent'
+    | '/avatar'
+    | '/employeeCard'
+    | '/login'
+    | '/rule'
+    | '/schedule'
   id:
     | '__root__'
     | '/'
     | '/aiContent'
     | '/avatar'
     | '/employeeCard'
+    | '/login'
     | '/rule'
     | '/schedule'
   fileRoutesById: FileRoutesById
@@ -98,6 +116,7 @@ export interface RootRouteChildren {
   AiContentRoute: typeof AiContentRoute
   AvatarRoute: typeof AvatarRoute
   EmployeeCardRoute: typeof EmployeeCardRoute
+  LoginRoute: typeof LoginRoute
   RuleRoute: typeof RuleRoute
   ScheduleRoute: typeof ScheduleRoute
 }
@@ -116,6 +135,13 @@ declare module '@tanstack/react-router' {
       path: '/rule'
       fullPath: '/rule'
       preLoaderRoute: typeof RuleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/employeeCard': {
@@ -154,9 +180,20 @@ const rootRouteChildren: RootRouteChildren = {
   AiContentRoute: AiContentRoute,
   AvatarRoute: AvatarRoute,
   EmployeeCardRoute: EmployeeCardRoute,
+  LoginRoute: LoginRoute,
   RuleRoute: RuleRoute,
   ScheduleRoute: ScheduleRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
