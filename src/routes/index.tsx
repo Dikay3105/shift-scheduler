@@ -59,9 +59,9 @@ function AdminDashboard() {
         },
         {
             title: "Tạo Content AI",
-            description: "Sinh bài đăng Facebook từ sản phẩm với AI",
+            description: "Sinh bài đăng và lên lịch Facebook từ sản phẩm với AI",
             icon: Sparkles,
-            link: "/aiContent",
+            link: "/aiPosts",
             gradient: "from-pink-500 to-rose-500",
         },
     ];
