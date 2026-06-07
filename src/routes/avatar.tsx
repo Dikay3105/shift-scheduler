@@ -407,11 +407,6 @@ function AvatarGeneratorPage() {
 
     return (
         <div className="min-h-screen overflow-hidden bg-muted/30">
-            <AdminHeader
-                title="Avatar"
-                description="Thiết kế và lưu avatar nhân viên"
-                backTo="/"
-            />
 
             <div className="bg-[linear-gradient(135deg,#f8f1e9,#f4e9d8)] pb-5">
                 <div className="container mx-auto px-4 pt-4 pb-4">

@@ -418,7 +418,6 @@ function SchedulePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-background to-purple-50">
-      <AdminHeader title="Schedule Management" description="Quản lý lịch làm việc của nhân viên" backTo="/" />
 
       <div className="mx-auto max-w-7xl px-4 py-6">
         {/* HERO HEADER */}

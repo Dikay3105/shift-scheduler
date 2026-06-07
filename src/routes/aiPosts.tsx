@@ -679,8 +679,6 @@ export function AiPostsPage() {
         <>
             <style>{CSS}</style>
             <div className="page-root">
-                <AdminHeader title="Bài viết AI" description="Quản lý & lên lịch nội dung mạng xã hội" backTo="/" />
-
                 <main className="page-main">
                     <div className="top-bar">
                         <div className="top-bar-left">

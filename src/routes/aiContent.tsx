@@ -446,9 +446,6 @@ function AiContentPage() {
     return (
         <div className="min-h-screen bg-muted/30">
 
-            <AdminHeader title="Bài viết AI" description="Quản lý & lên lịch nội dung mạng xã hội" />
-
-
             <main className="mx-auto max-w-7xl px-6 py-6">
 
                 {/* Top bar */}

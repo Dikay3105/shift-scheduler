@@ -220,11 +220,6 @@ function RulesPage() {
 
     return (
         <div className="min-h-screen bg-muted/30">
-            <AdminHeader
-                title="Nội quy & Văn bản nội bộ"
-                description="Quản lý tài liệu, quy định và văn bản công ty"
-                backTo="/"
-            />
 
             <main className="mx-auto max-w-7xl px-6 py-10">
                 {/* Hero */}
@@ -288,8 +283,8 @@ function RulesPage() {
                                     key={cat}
                                     onClick={() => setActiveCategory(cat)}
                                     className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${activeCategory === cat
-                                            ? "bg-emerald-600 text-white shadow-sm"
-                                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                                        ? "bg-emerald-600 text-white shadow-sm"
+                                        : "bg-muted text-muted-foreground hover:bg-muted/80"
                                         }`}
                                 >
                                     {cat}
@@ -477,8 +472,8 @@ function RulesPage() {
                                             type="button"
                                             onClick={() => setUploadCategory(cat)}
                                             className={`flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${uploadCategory === cat
-                                                    ? "border-emerald-600 bg-emerald-50 text-emerald-700"
-                                                    : "border-border bg-background text-muted-foreground hover:bg-muted"
+                                                ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                                                : "border-border bg-background text-muted-foreground hover:bg-muted"
                                                 }`}
                                         >
                                             {cat}

@@ -328,7 +328,6 @@ function EmployeeCardPage() {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <AdminHeader title="Employee Card" description="Thiết kế và xuất thẻ nhân viên" backTo="/" />
 
       {/* ── Loading overlay ── */}
       {exportStatus && (

@@ -1,24 +1,12 @@
 import React, { useState } from "react";
-import { Link, createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import {
-    CalendarDays, UserCog, Image, Package2, ShieldCheck,
-    Sparkles, LayoutDashboard, Settings, ChevronRight, RefreshCw,
-    TrendingUp, Users, Bell, Search,
+    CalendarDays, Sparkles, RefreshCw, TrendingUp, Users,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
-    component: AdminLayout,
+    component: DashboardContent,
 });
-
-const SIDEBAR_ITEMS = [
-    { label: "Dashboard", icon: LayoutDashboard, link: "/" },
-    { label: "Lịch làm việc", icon: CalendarDays, link: "/schedule" },
-    { label: "Nội quy", icon: ShieldCheck, link: "/rule" },
-    { label: "Quản lý kho", icon: Package2, link: "https://inventory.cinnamonforest.com/", external: true },
-    { label: "Thẻ nhân viên", icon: UserCog, link: "/employeeCard" },
-    { label: "Avatar", icon: Image, link: "/avatar" },
-    { label: "Content AI", icon: Sparkles, link: "/aiPosts", badge: "AI" },
-];
 
 const STAT_CARDS = [
     { value: "24", label: "Nhân viên online", icon: Users, color: "#4A90D9", light: "#5BA3E8" },
@@ -114,11 +102,10 @@ function StatCard({ card }: { card: typeof STAT_CARDS[0] }) {
     );
 }
 
-// Dashboard page content
 function DashboardContent() {
     const [activeTab, setActiveTab] = useState<"day" | "month" | "year">("month");
     return (
-        <div>
+        <div className=" p-6">
             <div className="grid grid-cols-4 gap-5 mb-8">
                 {STAT_CARDS.map(card => <StatCard key={card.label} card={card} />)}
             </div>
@@ -161,138 +148,6 @@ function DashboardContent() {
                     ))}
                 </div>
                 <TrafficChart />
-            </div>
-        </div>
-    );
-}
-
-function AdminLayout() {
-    const location = useLocation();
-    const currentPath = location.pathname;
-
-    const breadcrumb = SIDEBAR_ITEMS.find(i => i.link === currentPath)?.label ?? "Dashboard";
-
-    return (
-        <div className="flex" style={{ fontFamily: "system-ui, sans-serif", backgroundColor: "#f0f3f8" }}>
-
-            {/* ── Sidebar sticky ── */}
-            <aside
-                className="w-56 shrink-0 flex flex-col"
-                style={{
-                    backgroundColor: "#2c3e50",
-                    height: "100vh",
-                    position: "sticky",
-                    top: 0,
-                    overflowY: "auto",
-                }}
-            >
-                {/* Logo */}
-                <div className="px-5 py-5 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                    <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-                            style={{ backgroundColor: "#50C4B0" }}>
-                            <Sparkles size={14} className="text-white" />
-                        </div>
-                        <span className="text-white font-bold text-[15px] tracking-tight">Cinnamon</span>
-                    </div>
-                </div>
-
-                {/* Nav */}
-                <nav className="flex-1 py-4 px-3">
-                    <p className="text-[10px] font-semibold tracking-widest uppercase px-2 mb-2"
-                        style={{ color: "rgba(255,255,255,0.3)" }}>Menu</p>
-                    {SIDEBAR_ITEMS.map((item) => {
-                        const Icon = item.icon;
-                        const isActive = item.link === currentPath;
-                        const inner = (
-                            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg mb-0.5 cursor-pointer"
-                                style={{ backgroundColor: isActive ? "rgba(255,255,255,0.1)" : "transparent" }}>
-                                <Icon size={16} style={{ color: isActive ? "#50C4B0" : "rgba(255,255,255,0.45)" }} />
-                                <span className="text-[13px] flex-1"
-                                    style={{ color: isActive ? "#fff" : "rgba(255,255,255,0.55)" }}>
-                                    {item.label}
-                                </span>
-                                {item.badge && (
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded"
-                                        style={{ backgroundColor: "#50C4B0", color: "#fff" }}>
-                                        {item.badge}
-                                    </span>
-                                )}
-                                {isActive && <ChevronRight size={12} style={{ color: "#50C4B0" }} />}
-                            </div>
-                        );
-                        if (item.external) return (
-                            <button key={item.label} type="button" className="w-full text-left"
-                                onClick={() => window.open(item.link, "_blank")}>{inner}</button>
-                        );
-                        return <Link key={item.label} to={item.link}>{inner}</Link>;
-                    })}
-                </nav>
-
-                {/* User */}
-                <div className="px-4 py-4 shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-                    <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white"
-                            style={{ backgroundColor: "#50C4B0" }}>A</div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-[12px] text-white font-medium truncate">Admin</p>
-                            <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.35)" }}>Quản trị viên</p>
-                        </div>
-                        <Settings size={13} style={{ color: "rgba(255,255,255,0.3)" }} />
-                    </div>
-                </div>
-            </aside>
-
-            {/* ── Right column ── */}
-            <div className="flex-1 flex flex-col min-w-0 min-h-screen">
-
-                {/* ── Header sticky ── */}
-                <header
-                    className="flex items-center justify-between px-8 py-4 bg-white shrink-0"
-                    style={{
-                        borderBottom: "1px solid #e8edf2",
-                        position: "sticky",
-                        top: 0,
-                        zIndex: 10,
-                    }}
-                >
-                    <div className="flex items-center gap-2 text-[13px]" style={{ color: "#aab" }}>
-                        <span>Home</span>
-                        <ChevronRight size={12} />
-                        <span>Admin</span>
-                        <ChevronRight size={12} />
-                        <span className="font-medium" style={{ color: "#4A90D9" }}>{breadcrumb}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
-                            style={{ backgroundColor: "#f0f3f8" }}>
-                            <Search size={13} style={{ color: "#aab" }} />
-                            <span className="text-[12px]" style={{ color: "#aab" }}>Tìm kiếm...</span>
-                        </div>
-                        <button className="relative w-8 h-8 rounded-lg flex items-center justify-center"
-                            style={{ backgroundColor: "#f0f3f8", border: "none", cursor: "pointer" }}>
-                            <Bell size={15} style={{ color: "#778" }} />
-                            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-400" />
-                        </button>
-                        <div className="flex items-center gap-2 pl-3"
-                            style={{ borderLeft: "1px solid #e8edf2" }}>
-                            <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white"
-                                style={{ backgroundColor: "#50C4B0" }}>A</div>
-                            <span className="text-[13px] font-medium" style={{ color: "#2c3e50" }}>Admin</span>
-                            <ChevronRight size={12} style={{ color: "#aab", transform: "rotate(90deg)" }} />
-                        </div>
-                    </div>
-                </header>
-
-                {/* ── Main content ── */}
-                <main className="flex-1 p-8">
-                    {/*
-                        Nếu đang ở route "/" thì show dashboard content.
-                        Các route con (schedule, aiPosts, ...) render qua <Outlet />.
-                        Nếu dùng TanStack Router nested routes thì chỉ cần <Outlet /> ở đây.
-                    */}
-                    {currentPath === "/" ? <DashboardContent /> : <Outlet />}
-                </main>
             </div>
         </div>
     );
