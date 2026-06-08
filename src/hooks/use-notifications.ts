@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { io, Socket } from "socket.io-client";
+import type { Socket } from "socket.io-client";
 import { scheduleApi } from "@/services/api";
-import { socket } from "@/lib/socket";
+import { getSocket } from "@/lib/socket";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type NotificationType = "info" | "success" | "warning" | "error" | "alert";
+export type NotificationType =
+  | "info"
+  | "success"
+  | "warning"
+  | "error"
+  | "alert";
 
 export type Notification = {
   _id: string;
@@ -36,10 +41,13 @@ export function useNotifications() {
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
+
       const res = await scheduleApi.getNotifications();
-      // BE trả về array hoặc { data: [] }
-      const list: Notification[] = Array.isArray(res) ? res : (res?.data ?? []);
-      // Lọc bỏ isDeleted, sort mới nhất lên đầu
+
+      const list: Notification[] = Array.isArray(res)
+        ? res
+        : (res?.data ?? []);
+
       setNotifications(
         list
           .filter((n) => !n.isDeleted)
@@ -59,89 +67,122 @@ export function useNotifications() {
   // ── Socket.io realtime ───────────────────────────────────────────────────
 
   useEffect(() => {
+    const socket = getSocket();
+
+    if (!socket) return;
 
     socketRef.current = socket;
 
-    socket.on("connect", () => {
+    const onConnect = () => {
       console.log("🔌 Socket connected:", socket.id);
-    });
+    };
 
-    socket.on("disconnect", () => {
+    const onDisconnect = () => {
       console.log("❌ Socket disconnected");
-    });
+    };
 
-    // Server emit "warehouse-alert" khi có sản phẩm đỏ
-    socket.on("warehouse-alert", (notification: Notification) => {
+    const onWarehouseAlert = (notification: Notification) => {
       console.log("🔔 warehouse-alert received:", notification);
+
       setNotifications((prev) => {
-        // Nếu đã tồn tại thì update, chưa có thì thêm đầu
         const exists = prev.find((n) => n._id === notification._id);
+
         if (exists) {
           return prev.map((n) =>
-            n._id === notification._id ? { ...n, ...notification } : n
+            n._id === notification._id
+              ? { ...n, ...notification }
+              : n
           );
         }
+
         return [notification, ...prev];
       });
-    });
+    };
 
-    // Fetch lần đầu
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
+    socket.on("warehouse-alert", onWarehouseAlert);
+
     fetchNotifications();
 
     return () => {
-      socket.disconnect();
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+      socket.off("warehouse-alert", onWarehouseAlert);
+
+      // KHÔNG disconnect singleton socket ở đây
+      // socket.disconnect();
     };
   }, [fetchNotifications]);
 
   // ── Actions ──────────────────────────────────────────────────────────────
 
   const markRead = useCallback(async (id: string) => {
-    // Optimistic update
     setNotifications((prev) =>
       prev.map((n) =>
-        n._id === id && n.canMarkAsRead ? { ...n, isRead: true } : n
+        n._id === id && n.canMarkAsRead
+          ? { ...n, isRead: true }
+          : n
       )
     );
+
     try {
       await scheduleApi.markNotificationRead(id);
     } catch (error) {
       console.error("markRead error:", error);
-      // Rollback nếu lỗi
+
       setNotifications((prev) =>
-        prev.map((n) => (n._id === id ? { ...n, isRead: false } : n))
+        prev.map((n) =>
+          n._id === id ? { ...n, isRead: false } : n
+        )
       );
     }
   }, []);
 
   const markAllRead = useCallback(async () => {
-    // Optimistic update
     setNotifications((prev) =>
-      prev.map((n) => (n.canMarkAsRead ? { ...n, isRead: true } : n))
+      prev.map((n) =>
+        n.canMarkAsRead ? { ...n, isRead: true } : n
+      )
     );
+
     try {
-      // Gọi song song cho tất cả chưa đọc
-      const unread = notifications.filter((n) => !n.isRead && n.canMarkAsRead);
-      await Promise.all(unread.map((n) => scheduleApi.markNotificationRead(n._id)));
+      const unread = notifications.filter(
+        (n) => !n.isRead && n.canMarkAsRead
+      );
+
+      await Promise.all(
+        unread.map((n) =>
+          scheduleApi.markNotificationRead(n._id)
+        )
+      );
     } catch (error) {
       console.error("markAllRead error:", error);
-      await fetchNotifications(); // Refetch để đồng bộ lại
+      await fetchNotifications();
     }
   }, [notifications, fetchNotifications]);
 
-  const deleteNotification = useCallback(async (id: string) => {
-    // Optimistic update
-    setNotifications((prev) => prev.filter((n) => n._id !== id));
-    try {
-      await scheduleApi.deleteNotification(id);
-    } catch (error) {
-      console.error("deleteNotification error:", error);
-      await fetchNotifications();
-    }
-  }, [fetchNotifications]);
+  const deleteNotification = useCallback(
+    async (id: string) => {
+      setNotifications((prev) =>
+        prev.filter((n) => n._id !== id)
+      );
+
+      try {
+        await scheduleApi.deleteNotification(id);
+      } catch (error) {
+        console.error("deleteNotification error:", error);
+        await fetchNotifications();
+      }
+    },
+    [fetchNotifications]
+  );
 
   // ── Derived ──────────────────────────────────────────────────────────────
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const unreadCount = notifications.filter(
+    (n) => !n.isRead
+  ).length;
 
   return {
     notifications,

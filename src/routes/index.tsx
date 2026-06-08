@@ -2,8 +2,7 @@ import React, { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { CalendarDays, Sparkles, RefreshCw, TrendingUp, Users, Clock } from "lucide-react";
 import { io } from "socket.io-client";
-import { socket } from "@/lib/socket";
-import { scheduleApi } from "@/services/api";
+import { getSocket } from "@/lib/socket"; import { scheduleApi } from "@/services/api";
 import { aiPostApi } from "@/services/aiPostApi";
 
 export const Route = createFileRoute("/")({
@@ -17,20 +16,28 @@ export function useOnlineCount() {
     const [count, setCount] = useState<number>(0);
 
     useEffect(() => {
+        const socket = getSocket();
+
+        if (!socket) return;
+
         const handler = (n: number) => setCount(n);
+
         socket.on("onlineCount", handler);
 
-        // Nếu socket đã connected rồi thì request count ngay,
-        // vì "onlineCount" event đã bị bỏ lỡ lúc connect
-        if (socket.connected) {
+        const requestCount = () => {
             socket.emit("requestOnlineCount");
+        };
+
+        if (socket.connected) {
+            requestCount();
         } else {
-            socket.once("connect", () => {
-                socket.emit("requestOnlineCount");
-            });
+            socket.once("connect", requestCount);
         }
 
-        return () => { socket.off("onlineCount", handler); };
+        return () => {
+            socket.off("onlineCount", handler);
+            socket.off("connect", requestCount);
+        };
     }, []);
 
     return count;
