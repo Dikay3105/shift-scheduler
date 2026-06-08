@@ -912,7 +912,7 @@ const CSS = `
 .menu-btn:hover{ background:hsl(var(--muted)); color:hsl(var(--foreground)); }
 .dropdown  { position:absolute; right:0; top:calc(100% + 4px); z-index:100; min-width:168px; background:white; border:1.5px solid var(--b); border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,.16); padding:.375rem; animation:dd-in .12s ease; }
 @keyframes dd-in { from{ opacity:0; transform:translateY(-4px); } to{ opacity:1; transform:translateY(0); } }
-.drop-item { display:flex; align-items:center; gap:.5rem; width:100%; padding:.5rem .625rem; border-radius:8px; font-size:.8rem; color:hsl(var(--foreground)); background:transparent; border:none; cursor:pointer; text-decoration:none; transition:.12s; }
+.drop-item { display:flex; align-items:center; gap:.5rem; width:100%; padding:.5rem .625rem; border-radius:8px; font-size:.8rem; color:black; background:transparent; border:none; cursor:pointer; text-decoration:none; transition:.12s; }
 .drop-item:hover { background:rgba(24,24,24,.05); }
 .drop-item.danger { color:#ef4444; }
 .drop-item.danger:hover { background:rgba(239,68,68,.07); }
