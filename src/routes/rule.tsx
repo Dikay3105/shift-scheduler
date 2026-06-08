@@ -76,13 +76,15 @@ function RulesPage() {
     const renderCategoryIcon = (category: string) => {
         if (category === "Nội quy") {
             return (
-                <div className="rounded-2xl bg-red-50 p-4 text-red-500">
+                <div className="rounded-2xl p-4 text-white shadow-md"
+                    style={{ background: "linear-gradient(135deg,#8B1A38,#6A1229)" }}>
                     <Scale className="h-6 w-6" />
                 </div>
             );
         }
         return (
-            <div className="rounded-2xl bg-emerald-50 p-4 text-emerald-600">
+            <div className="rounded-2xl p-4 text-[#8B1A38] border border-[#E8C0CC]"
+                style={{ background: "linear-gradient(135deg,#F8EDF0,#EED5D3)" }}>
                 <BookOpen className="h-6 w-6" />
             </div>
         );
@@ -219,28 +221,62 @@ function RulesPage() {
     };
 
     return (
-        <div className="min-h-screen bg-muted/30">
+        <div className="min-h-screen bg-background text-foreground">
 
-            <main className="mx-auto max-w-7xl px-6 py-10">
+            <main className="mx-auto max-w-7xl px-4 md:px-6 py-6 md:py-10">
                 {/* Hero */}
-                <div className="mb-10 rounded-3xl bg-gradient-to-r from-emerald-600 to-green-500 p-8 text-white shadow-2xl">
-                    <h2 className="mb-3 text-4xl font-bold">
-                        Quản lý văn bản nội bộ
-                    </h2>
-                    <p className="max-w-3xl text-emerald-100">
-                        Upload tài liệu Word / PDF / Excel và xem trực tiếp trên hệ thống.
-                    </p>
+                <div
+                    className="relative mb-8 overflow-hidden rounded-3xl border border-border p-6 md:p-10 shadow-xl"
+                    style={{
+                        background:
+                            "linear-gradient(135deg, #8B1A38 0%, #6A1229 60%, #4A0A1C 100%)",
+                    }}
+                >
+                    <div
+                        aria-hidden
+                        className="absolute -right-16 -top-16 h-64 w-64 rounded-full opacity-30"
+                        style={{ background: "radial-gradient(closest-side, #F4C5CF, transparent 70%)" }}
+                    />
+                    <div
+                        aria-hidden
+                        className="absolute -left-10 -bottom-10 h-48 w-48 rounded-full opacity-20"
+                        style={{ background: "radial-gradient(closest-side, #EED5D3, transparent 70%)" }}
+                    />
+                    <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div className="max-w-2xl">
+                            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-white/85 backdrop-blur">
+                                <Scale className="h-3.5 w-3.5" />
+                                Trung tâm tài liệu
+                            </div>
+                            <h2 className="mb-2 text-2xl md:text-4xl font-bold leading-tight text-white">
+                                Quản lý văn bản & nội quy
+                            </h2>
+                            <p className="text-sm md:text-base text-white/80">
+                                Lưu trữ tập trung, xem trực tiếp, tải về tức thì — hỗ trợ PDF, Word, Excel.
+                            </p>
+                        </div>
+                        <div className="flex gap-4 md:gap-6">
+                            <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-white backdrop-blur">
+                                <div className="text-[10px] uppercase tracking-wider text-white/70">Tổng tài liệu</div>
+                                <div className="mt-1 text-2xl font-bold">{documents.length}</div>
+                            </div>
+                            <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-white backdrop-blur">
+                                <div className="text-[10px] uppercase tracking-wider text-white/70">Đang lọc</div>
+                                <div className="mt-1 text-2xl font-bold">{filteredDocs.length}</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Toolbar */}
-                <Card className="mb-6 rounded-3xl border-0 shadow-md">
-                    <CardContent className="p-6">
+                <Card className="mb-6 rounded-2xl border border-border bg-card shadow-sm">
+                    <CardContent className="p-5 md:p-6">
                         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                             <div className="relative w-full md:max-w-md">
                                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                 <Input
                                     placeholder="Tìm kiếm tài liệu..."
-                                    className="pl-10"
+                                    className="pl-10 rounded-xl"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                 />
@@ -255,8 +291,7 @@ function RulesPage() {
                                     onChange={handleFileSelected}
                                 />
                                 <Button
-                                    variant="outline"
-                                    className="rounded-2xl"
+                                    className="rounded-xl bg-[#8B1A38] text-white hover:bg-[#6A1229]"
                                     onClick={() => {
                                         if (fileInputRef.current) {
                                             fileInputRef.current.value = "";
@@ -276,32 +311,30 @@ function RulesPage() {
                         </div>
 
                         {/* Category filter */}
-                        <div className="mt-4 flex flex-wrap items-center gap-2">
+                        <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-border pt-4">
                             <Filter className="h-4 w-4 text-muted-foreground" />
                             {CATEGORIES.map((cat) => (
                                 <button
                                     key={cat}
                                     onClick={() => setActiveCategory(cat)}
                                     className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${activeCategory === cat
-                                        ? "bg-emerald-600 text-white shadow-sm"
-                                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                                        ? "bg-[#8B1A38] text-white shadow-sm"
+                                        : "bg-muted text-muted-foreground hover:bg-accent"
                                         }`}
                                 >
                                     {cat}
                                 </button>
                             ))}
-                        </div>
-
-                        {/* Supported formats */}
-                        <div className="mt-3 flex flex-wrap gap-2">
-                            {["PDF (.pdf)", "Word (.docx)", "Excel (.xlsx)"].map((f) => (
-                                <span
-                                    key={f}
-                                    className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground"
-                                >
-                                    {f}
-                                </span>
-                            ))}
+                            <div className="ml-auto flex flex-wrap gap-2">
+                                {["PDF", "Word", "Excel"].map((f) => (
+                                    <span
+                                        key={f}
+                                        className="rounded-full border border-border bg-muted px-2.5 py-0.5 text-[11px] text-muted-foreground"
+                                    >
+                                        {f}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -316,7 +349,7 @@ function RulesPage() {
                     )}
 
                     {!loading && filteredDocs.length === 0 && (
-                        <div className="rounded-3xl border-2 border-dashed p-16 text-center text-muted-foreground">
+                        <div className="rounded-3xl border-2 border-dashed border-border bg-card p-16 text-center text-muted-foreground">
                             <FileArchive className="mx-auto mb-4 h-12 w-12 opacity-30" />
                             <p className="text-lg font-medium">Chưa có tài liệu nào</p>
                             <p className="mt-1 text-sm">Upload file PDF, Word hoặc Excel để bắt đầu</p>
@@ -331,17 +364,22 @@ function RulesPage() {
                             return (
                                 <Card
                                     key={doc._id}
-                                    className="rounded-3xl border-0 shadow-md transition-all hover:shadow-xl"
+                                    className="group rounded-2xl border border-border bg-card shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg hover:border-[#E8C0CC]"
                                 >
-                                    <CardContent className="p-6">
+                                    <CardContent className="p-5 md:p-6">
                                         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                                            <div className="flex items-start gap-4">
+                                            <div className="flex items-start gap-4 min-w-0">
                                                 {renderCategoryIcon(doc.category)}
 
-                                                <div>
-                                                    <div className="mb-2 flex flex-wrap items-center gap-3">
-                                                        <h3 className="text-xl font-semibold">{doc.title}</h3>
-                                                        <Badge variant="secondary">{doc.category}</Badge>
+                                                <div className="min-w-0">
+                                                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                                                        <h3 className="text-lg md:text-xl font-semibold text-foreground truncate">{doc.title}</h3>
+                                                        <Badge
+                                                            variant="secondary"
+                                                            className="border border-[#E8C0CC] bg-[#F8EDF0] text-[#8B1A38]"
+                                                        >
+                                                            {doc.category}
+                                                        </Badge>
                                                     </div>
 
                                                     {doc.htmlContent && (
@@ -357,12 +395,12 @@ function RulesPage() {
                                                 </div>
                                             </div>
 
-                                            <div className="flex flex-wrap gap-3">
+                                            <div className="flex flex-wrap gap-2 lg:gap-3">
                                                 {attachment && (
                                                     <>
                                                         <Button
                                                             variant="outline"
-                                                            className="rounded-2xl"
+                                                            className="rounded-xl border-[#E8C0CC] text-[#8B1A38] hover:bg-[#F8EDF0]"
                                                             onClick={() => {
                                                                 const ext = attachment.fileName?.split(".").pop()?.toLowerCase() || "";
                                                                 const fileType = attachment.fileType || (
@@ -379,7 +417,7 @@ function RulesPage() {
                                                         </Button>
 
                                                         <Button
-                                                            className="rounded-2xl"
+                                                            className="rounded-xl bg-[#8B1A38] text-white hover:bg-[#6A1229]"
                                                             onClick={() =>
                                                                 handleDownload(attachment.fileUrl, attachment.fileName)
                                                             }
@@ -419,7 +457,7 @@ function RulesPage() {
                         if (e.target === e.currentTarget) handleCancelUpload();
                     }}
                 >
-                    <div className="w-full max-w-md rounded-3xl bg-white shadow-2xl">
+                    <div className="w-full max-w-md rounded-3xl bg-card text-card-foreground border border-border shadow-2xl">
                         {/* Header */}
                         <div className="flex items-center justify-between border-b px-6 py-4">
                             <h3 className="text-lg font-semibold">Thông tin tài liệu</h3>
@@ -438,7 +476,7 @@ function RulesPage() {
                             {/* File info */}
                             {pendingFile && (
                                 <div className="flex items-center gap-3 rounded-2xl bg-muted px-4 py-3">
-                                    <FileText className="h-5 w-5 shrink-0 text-emerald-600" />
+                                    <FileText className="h-5 w-5 shrink-0 text-[#8B1A38]" />
                                     <div className="min-w-0">
                                         <p className="truncate text-sm font-medium">{pendingFile.name}</p>
                                         <p className="text-xs text-muted-foreground">
@@ -472,7 +510,7 @@ function RulesPage() {
                                             type="button"
                                             onClick={() => setUploadCategory(cat)}
                                             className={`flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${uploadCategory === cat
-                                                ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                                                ? "border-[#8B1A38] bg-[#F8EDF0] text-[#8B1A38]"
                                                 : "border-border bg-background text-muted-foreground hover:bg-muted"
                                                 }`}
                                         >
@@ -493,7 +531,7 @@ function RulesPage() {
                                 Hủy
                             </Button>
                             <Button
-                                className="flex-1 rounded-2xl bg-emerald-600 hover:bg-emerald-700"
+                                className="flex-1 rounded-2xl bg-[#8B1A38] hover:bg-[#6A1229]"
                                 onClick={handleConfirmUpload}
                                 disabled={!uploadTitle.trim()}
                             >
@@ -513,7 +551,7 @@ function RulesPage() {
                         if (e.target === e.currentTarget) closePreview();
                     }}
                 >
-                    <div className="relative flex h-[96vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+                    <div className="relative flex h-[96vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl bg-card text-card-foreground border border-border shadow-2xl">
                         {/* Modal header */}
                         <div className="flex items-center justify-between border-b px-8 py-4">
                             <h3 className="truncate text-lg font-semibold">{previewTitle}</h3>
@@ -529,7 +567,7 @@ function RulesPage() {
 
                         {previewLoading ? (
                             <div className="flex flex-1 flex-col items-center justify-center gap-4 text-muted-foreground">
-                                <Loader2 className="h-10 w-10 animate-spin text-emerald-500" />
+                                <Loader2 className="h-10 w-10 animate-spin text-[#8B1A38]" />
                                 <p className="text-sm">Đang tải tài liệu...</p>
                             </div>
                         ) : (

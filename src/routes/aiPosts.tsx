@@ -178,8 +178,9 @@ function EditPostDrawer({ postId, onClose, onSaved }: {
             setExtraNote(p.extraNote ?? "");
             if (p.scheduledAt) setScheduleAt(isoToLocal(p.scheduledAt));
             // Load existing images
-            if (p.imageUrls?.length) {
-                setImageItems(p.imageUrls.map((url: string) => ({ type: "existing" as const, url })));
+            const urls: string[] = (p as any).imageUrls ?? (p.imageUrl ? [p.imageUrl] : []);
+            if (urls.length) {
+                setImageItems(urls.map((url: string) => ({ type: "existing" as const, url })));
             }
         }).catch(console.error).finally(() => setLoading(false));
     }, [postId]);
@@ -792,7 +793,7 @@ export function AiPostsPage() {
 // ─── CSS ──────────────────────────────────────────────────────────────────────
 
 const CSS = `
-:root { --b: #d1d5db; }
+:root { --b: #9F8983 }
 @media (prefers-color-scheme: dark) { :root { --b: #3a3f4b; } }
 
 .page-root { min-height:100vh; background:hsl(var(--muted)/.3); }

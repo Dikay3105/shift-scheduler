@@ -4,8 +4,7 @@ import {
     CalendarDays, UserCog, Image, Package2, ShieldCheck,
     Sparkles, LayoutDashboard, Settings, ChevronRight,
     Bell, Search, Sun, Moon, Monitor, Check,
-    PanelLeftOpen,
-    PanelLeftClose,
+    PanelLeftOpen, PanelLeftClose, Menu, X,
 } from "lucide-react";
 import { useTheme, type ThemeMode } from "@/hooks/use-theme";
 
@@ -19,7 +18,6 @@ const SIDEBAR_ITEMS = [
     { label: "Content AI", icon: Sparkles, link: "/aiPosts", badge: "AI" },
 ];
 
-// Sub-pages: which sidebar item they belong to (for highlight + breadcrumb)
 const SUB_PAGES: Record<string, { parent: string; label: string }> = {
     "/aiContent": { parent: "/aiPosts", label: "Tạo nội dung" },
 };
@@ -88,163 +86,167 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     const parentItem = SIDEBAR_ITEMS.find(i => i.link === activeSidebarLink);
     const parentLabel = parentItem?.label ?? "Dashboard";
     const breadcrumb = sub?.label || parentLabel;
+
     const [collapsed, setCollapsed] = useState(() => {
         if (typeof window === "undefined") return false;
         return localStorage.getItem("sidebar-collapsed") === "true";
     });
+    const [mobileOpen, setMobileOpen] = useState(false);
 
     useEffect(() => {
-        localStorage.setItem(
-            "sidebar-collapsed",
-            String(collapsed)
-        );
+        localStorage.setItem("sidebar-collapsed", String(collapsed));
     }, [collapsed]);
-    return (
-        <div className="flex bg-background text-foreground" style={{ fontFamily: "system-ui, sans-serif" }}>
-            <aside
-                className={`${collapsed ? "w-16" : "w-56"
-                    } shrink-0 flex flex-col bg-[#2c3e50] dark:bg-[#0f172a] transition-all duration-300`}
+
+    // Close mobile sidebar on route change
+    useEffect(() => { setMobileOpen(false); }, [currentPath]);
+
+    // Lock body scroll while mobile drawer open
+    useEffect(() => {
+        if (mobileOpen) {
+            const prev = document.body.style.overflow;
+            document.body.style.overflow = "hidden";
+            return () => { document.body.style.overflow = prev; };
+        }
+    }, [mobileOpen]);
+
+    const renderNavItem = (item: typeof SIDEBAR_ITEMS[number], compact: boolean) => {
+        const Icon = item.icon;
+        const isActive = item.link === activeSidebarLink;
+        const inner = (
+            <div
+                title={compact ? item.label : undefined}
+                className={`flex items-center px-3 py-2.5 rounded-lg mb-0.5 cursor-pointer ${compact ? "justify-center" : "gap-3"}`}
                 style={{
-                    height: "100vh",
-                    position: "sticky",
-                    top: 0,
-                    overflowY: "auto",
+                    backgroundColor: isActive ? "rgba(255,255,255,0.1)" : "transparent",
                 }}
             >
-                <div
-                    className="px-4 py-4 shrink-0"
-                    style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
-                >
-                    <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'}`}>
-                        <div className="flex items-center gap-2 overflow-hidden">
+                <Icon size={16} style={{ color: isActive ? "#F4C5CF" : "rgba(255,255,255,0.55)" }} />
+                {!compact && (
+                    <span
+                        className="text-[13px] flex-1"
+                        style={{ color: isActive ? "#fff" : "rgba(255,255,255,0.7)" }}
+                    >
+                        {item.label}
+                    </span>
+                )}
+                {!compact && item.badge && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded"
+                        style={{ backgroundColor: "#8B1A38", color: "#fff" }}>
+                        {item.badge}
+                    </span>
+                )}
+                {!compact && isActive && (
+                    <ChevronRight size={12} style={{ color: "#F4C5CF" }} />
+                )}
+            </div>
+        );
+        if (item.external) return (
+            <button key={item.label} type="button" className="w-full text-left bg-transparent border-none p-0"
+                onClick={() => window.open(item.link, "_blank")}>{inner}</button>
+        );
+        return <Link key={item.label} to={item.link}>{inner}</Link>;
+    };
 
+    const SidebarBody = ({ compact }: { compact: boolean }) => (
+        <>
+            <div className="px-4 py-4 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                <div className={`flex items-center ${compact ? 'justify-center' : 'justify-between'}`}>
+                    <div className="flex items-center gap-2 overflow-hidden">
+                        {!compact && (
+                            <>
+                                <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+                                    style={{ backgroundColor: "#8B1A38" }}>
+                                    <Sparkles size={14} className="text-white" />
+                                </div>
+                                <span className="text-white font-bold text-[15px] tracking-tight">Cinnamon</span>
+                            </>
+                        )}
+                    </div>
+                    {/* Desktop collapse button only */}
+                    <button
+                        onClick={() => setCollapsed(v => !v)}
+                        className="bg-transparent border-none cursor-pointer text-white hidden md:inline-flex"
+                    >
+                        {compact ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+                    </button>
+                    {/* Mobile close button */}
+                    <button
+                        onClick={() => setMobileOpen(false)}
+                        className="bg-transparent border-none cursor-pointer text-white md:hidden"
+                    >
+                        <X size={18} />
+                    </button>
+                </div>
+            </div>
 
+            <nav className="flex-1 py-4 px-3 overflow-y-auto">
+                <p className="text-[10px] font-semibold tracking-widest uppercase px-2 mb-2"
+                    style={{ color: "rgba(255,255,255,0.35)" }}>Menu</p>
+                {SIDEBAR_ITEMS.map(item => renderNavItem(item, compact))}
+            </nav>
 
-                            {!collapsed && (
-                                <>
-                                    <div
-                                        className="w-7 h-7 rounded-lg flex items-center justify-center"
-                                        style={{ backgroundColor: "#50C4B0" }}
-                                    >
-                                        <Sparkles size={14} className="text-white" />
-                                    </div>
-
-                                    <span className="text-white font-bold text-[15px] tracking-tight">
-                                        Cinnamon
-                                    </span>
-                                </>
-
-                            )}
+            <div className="px-4 py-4 shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white"
+                        style={{ backgroundColor: "#8B1A38" }}>A</div>
+                    {!compact && (
+                        <div className="flex-1 min-w-0">
+                            <p className="text-[12px] text-white font-medium truncate">Admin</p>
+                            <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.45)" }}>Quản trị viên</p>
                         </div>
-
-                        <button
-                            onClick={() => setCollapsed(v => !v)}
-                            className="bg-transparent border-none cursor-pointer text-white"
-                        >
-                            {collapsed ? (
-                                <PanelLeftOpen size={16} />
-                            ) : (
-                                <PanelLeftClose size={16} />
-                            )}
-                        </button>
-                    </div>
+                    )}
+                    {!compact && <Settings size={13} style={{ color: "rgba(255,255,255,0.4)" }} />}
                 </div>
+            </div>
+        </>
+    );
 
-                <nav className="flex-1 py-4 px-3">
-                    <p className="text-[10px] font-semibold tracking-widest uppercase px-2 mb-2"
-                        style={{ color: "rgba(255,255,255,0.3)" }}>Menu</p>
-                    {SIDEBAR_ITEMS.map((item) => {
-                        const Icon = item.icon;
-                        const isActive = item.link === activeSidebarLink;
-                        const inner = (
-                            <div
-                                title={collapsed ? item.label : undefined}
-                                className={`flex items-center px-3 py-2.5 rounded-lg mb-0.5 cursor-pointer ${collapsed ? "justify-center" : "gap-3"
-                                    }`}
-                                style={{
-                                    backgroundColor: isActive
-                                        ? "rgba(255,255,255,0.1)"
-                                        : "transparent",
-                                }}
-                            >
-                                <Icon size={16} style={{ color: isActive ? "#50C4B0" : "rgba(255,255,255,0.45)" }} />
-                                {!collapsed && (
-                                    <span
-                                        className="text-[13px] flex-1"
-                                        style={{
-                                            color: isActive
-                                                ? "#fff"
-                                                : "rgba(255,255,255,0.55)",
-                                        }}
-                                    >
-                                        {item.label}
-                                    </span>
-                                )}
-                                {!collapsed && item.badge && (
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded"
-                                        style={{ backgroundColor: "#50C4B0", color: "#fff" }}>
-                                        {item.badge}
-                                    </span>
-                                )}
-                                {!collapsed && isActive && (
-                                    <ChevronRight
-                                        size={12}
-                                        style={{ color: "#50C4B0" }}
-                                    />
-                                )}
-                            </div>
-                        );
-                        if (item.external) return (
-                            <button key={item.label} type="button" className="w-full text-left bg-transparent border-none p-0"
-                                onClick={() => window.open(item.link, "_blank")}>{inner}</button>
-                        );
-                        return <Link key={item.label} to={item.link}>{inner}</Link>;
-                    })}
-                </nav>
+    return (
+        <div className="flex bg-background text-foreground" style={{ fontFamily: "system-ui, sans-serif" }}>
+            {/* Desktop sidebar */}
+            <aside
+                className={`${collapsed ? "w-16" : "w-56"} shrink-0 hidden md:flex flex-col bg-sidebar transition-all duration-300`}
+                style={{ height: "100vh", position: "sticky", top: 0, overflow: "hidden" }}
+            >
+                <SidebarBody compact={collapsed} />
+            </aside>
 
-                <div className="px-4 py-4 shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-                    <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white"
-                            style={{ backgroundColor: "#50C4B0" }}>A</div>
-                        {!collapsed && (
-                            <div className="flex-1 min-w-0">
-                                <p className="text-[12px] text-white font-medium truncate">
-                                    Admin
-                                </p>
-                                <p
-                                    className="text-[10px]"
-                                    style={{
-                                        color: "rgba(255,255,255,0.35)",
-                                    }}
-                                >
-                                    Quản trị viên
-                                </p>
-                            </div>
-                        )}
-                        {!collapsed && (
-                            <Settings
-                                size={13}
-                                style={{
-                                    color: "rgba(255,255,255,0.3)",
-                                }}
-                            />
-                        )}
-                    </div>
-                </div>
+            {/* Mobile drawer + overlay */}
+            {mobileOpen && (
+                <div
+                    className="fixed inset-0 z-40 bg-black/50 md:hidden"
+                    onClick={() => setMobileOpen(false)}
+                />
+            )}
+            <aside
+                className={`fixed top-0 left-0 z-50 h-screen w-64 bg-sidebar flex flex-col md:hidden transition-transform duration-300 ${mobileOpen ? "translate-x-0" : "-translate-x-full"
+                    }`}
+            >
+                <SidebarBody compact={false} />
             </aside>
 
             <div className="flex-1 flex flex-col min-w-0 min-h-screen">
                 <header
-                    className="flex items-center justify-between px-8 py-4 bg-background border-b border-border shrink-0"
+                    className="flex items-center justify-between gap-3 px-4 md:px-8 py-3 md:py-4 bg-background border-b border-border shrink-0"
                     style={{ position: "sticky", top: 0, zIndex: 10 }}
                 >
-                    <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
-                        <span>Home</span>
-                        <ChevronRight size={12} />
-                        <span className="font-medium" style={{ color: "#4A90D9" }}>{breadcrumb}</span>
+                    <div className="flex items-center gap-3 min-w-0">
+                        {/* Mobile hamburger */}
+                        <button
+                            onClick={() => setMobileOpen(true)}
+                            className="md:hidden w-9 h-9 rounded-lg flex items-center justify-center bg-muted hover:bg-accent border-none cursor-pointer text-foreground"
+                            aria-label="Mở menu"
+                        >
+                            <Menu size={18} />
+                        </button>
+                        <div className="flex items-center gap-2 text-[13px] text-muted-foreground min-w-0">
+                            <span className="hidden sm:inline">Home</span>
+                            <ChevronRight size={12} className="hidden sm:inline" />
+                            <span className="font-medium text-primary truncate">{breadcrumb}</span>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted">
+                    <div className="flex items-center gap-2 md:gap-3">
+                        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted">
                             <Search size={13} className="text-muted-foreground" />
                             <span className="text-[12px] text-muted-foreground">Tìm kiếm...</span>
                         </div>
@@ -253,11 +255,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                             <Bell size={15} />
                             <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-400" />
                         </button>
-                        <div className="flex items-center gap-2 pl-3 border-l border-border">
+                        <div className="hidden sm:flex items-center gap-2 pl-3 border-l border-border">
                             <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white"
-                                style={{ backgroundColor: "#50C4B0" }}>A</div>
+                                style={{ backgroundColor: "#8B1A38" }}>A</div>
                             <span className="text-[13px] font-medium text-foreground">Admin</span>
-                            <ChevronRight size={12} className="text-muted-foreground" style={{ transform: "rotate(90deg)" }} />
                         </div>
                     </div>
                 </header>

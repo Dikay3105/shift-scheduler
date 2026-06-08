@@ -13,8 +13,8 @@ const STORAGE_KEY = "app.theme";
 
 function getSystem(): "light" | "dark" {
     if (typeof window === "undefined") return "light";
-    // return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    return "light";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    // return "light";
 }
 
 function applyClass(resolved: "light" | "dark") {

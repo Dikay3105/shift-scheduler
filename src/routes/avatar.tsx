@@ -406,13 +406,13 @@ function AvatarGeneratorPage() {
     }
 
     return (
-        <div className="min-h-screen overflow-hidden bg-muted/30">
+        <div className="min-h-screen overflow-hidden bg-background text-foreground">
 
-            <div className="bg-[linear-gradient(135deg,#f8f1e9,#f4e9d8)] pb-5">
+            <div className="pb-5">
                 <div className="container mx-auto px-4 pt-4 pb-4">
                     <div className="grid items-stretch gap-6 lg:grid-cols-[380px_1fr]">
                         {/* LEFT PANEL */}
-                        <div className="flex flex-col rounded-3xl bg-white p-5 shadow-2xl">
+                        <div className="flex flex-col rounded-3xl bg-card text-card-foreground border border-border p-5 shadow-xl">
                             <div className="mb-4">
                                 <h2 className="text-xl font-bold">Thông tin nhân viên</h2>
                                 <p className="mt-0.5 text-xs text-muted-foreground">
@@ -478,19 +478,19 @@ function AvatarGeneratorPage() {
                         </div>
 
                         {/* RIGHT PANEL */}
-                        <div className="flex flex-col rounded-3xl bg-white p-5 shadow-2xl">
+                        <div className="flex flex-col rounded-3xl bg-card text-card-foreground border border-border p-5 shadow-xl">
                             <div className="mb-3 text-center">
                                 <h2 className="text-2xl font-bold">Xem trước</h2>
                                 <div className="mt-2 inline-block rounded-full bg-muted px-3 py-0.5 text-xs">
                                     900 × 900
                                 </div>
                             </div>
-                            <div className="flex flex-1 items-center justify-center rounded-3xl bg-[#f8f4eb] p-4">
+                            <div className="flex flex-1 items-center justify-center rounded-3xl bg-muted/50 p-4">
                                 <canvas
                                     ref={canvasRef}
                                     width={900}
                                     height={900}
-                                    className="aspect-square w-full max-w-[min(420px,55vh)] rounded-2xl border border-[#e0d9cc] bg-white shadow-2xl"
+                                    className="aspect-square w-full max-w-[min(420px,55vh)] rounded-2xl border border-border bg-white shadow-2xl"
                                 />
                             </div>
                         </div>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { scheduleApi } from "@/services/api";
+import { socket } from "@/lib/socket";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,10 +59,7 @@ export function useNotifications() {
   // ── Socket.io realtime ───────────────────────────────────────────────────
 
   useEffect(() => {
-    const SOCKET_URL =
-      import.meta.env.VITE_API_BASE_URL?.replace("/api", "") ?? "";
 
-    const socket = io(SOCKET_URL, { transports: ["websocket", "polling"] });
     socketRef.current = socket;
 
     socket.on("connect", () => {

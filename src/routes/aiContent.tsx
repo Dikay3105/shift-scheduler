@@ -307,7 +307,7 @@ function AiContentPage() {
 
                 setDrafts([{
                     id: editId,
-                    products: post.products ?? [],
+                    products: (post.products ?? []) as unknown as Product[],
                     content: post.content,
                     tone: post.tone,
                     platform: post.platform ?? "",

@@ -327,7 +327,8 @@ function EmployeeCardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-background text-foreground">
+
 
       {/* ── Loading overlay ── */}
       {exportStatus && (
@@ -405,7 +406,7 @@ function EmployeeCardPage() {
         </div>
       )}
 
-      <div className="min-h-screen bg-white px-4 py-10">
+      <div className="min-h-screen bg-background px-4 py-10">
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
           .scene{width:${CARD_W}px;height:${CARD_H}px;perspective:1400px;cursor:pointer;filter:drop-shadow(0 12px 32px rgba(139,26,56,.22))}
@@ -413,6 +414,13 @@ function EmployeeCardPage() {
           .flipped .inner{transform:rotateY(180deg)}
           .face{position:absolute;inset:0;border-radius:20px;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:#FAFAFA;border:1.5px solid #ddd}
           .face.back{transform:rotateY(180deg)}
+           .emp-field input::placeholder,
+  .emp-field textarea::placeholder { color: rgba(255,255,255,0.3); }
+
+  .emp-field input:-webkit-autofill,
+  .emp-field input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 100px rgba(255,255,255,0.08) inset;
+    -webkit-text-fill-color: #fff;
         `}</style>
 
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-8 lg:flex-row lg:items-start lg:justify-center">
@@ -476,12 +484,12 @@ function EmployeeCardPage() {
           </div>
 
           {/* FORM */}
-          <div className="w-full max-w-[340px] overflow-hidden rounded-2xl border border-[#E8C0CC] bg-white">
+          <div className="w-full max-w-[340px] overflow-hidden rounded-2xl border border-[#E8C0CC] bg-card text-card-foreground">
             <div className="flex">
-              <button onClick={() => setTab("front")} className={`flex-1 py-3 text-[11px] font-medium tracking-[0.5px] transition ${tab === "front" ? "bg-[#8B1A38] text-white" : "bg-white text-gray-400"}`}>Mặt trước</button>
-              <button onClick={() => setTab("back")} className={`flex-1 py-3 text-[11px] font-medium tracking-[0.5px] transition ${tab === "back" ? "bg-[#8B1A38] text-white" : "bg-white text-gray-400"}`}>Mặt sau</button>
+              <button onClick={() => setTab("front")} className={`flex-1 py-3 text-[11px] font-medium tracking-[0.5px] transition ${tab === "front" ? "bg-[#8B1A38] text-white" : "bg-card text-muted-foreground"}`}>Mặt trước</button>
+              <button onClick={() => setTab("back")} className={`flex-1 py-3 text-[11px] font-medium tracking-[0.5px] transition ${tab === "back" ? "bg-[#8B1A38] text-white" : "bg-card text-muted-foreground"}`}>Mặt sau</button>
             </div>
-            <div className="p-5">
+            <div className="p-5 emp-field">
               {tab === "front" && (
                 <div>
                   <div className="mb-4">
@@ -593,7 +601,17 @@ function EmployeeCardPage() {
   );
 }
 
+// Tìm component Field và thay toàn bộ bằng:
+
 function Field({ label, value, onChange, multiline }: { label: string; value: string; onChange: (v: string) => void; multiline?: boolean }) {
+  const inputStyle = {
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderColor: "#E8C0CC",
+    color: "#fff",
+  };
+
+  const sharedClass = "w-full rounded-lg border px-3 py-2 text-[12.5px] outline-none transition focus:border-[#8B1A38]";
+
   return (
     <div className="mb-4">
       <label className="mb-1 block text-[10px] uppercase tracking-[0.8px] text-gray-400">{label}</label>
@@ -602,13 +620,15 @@ function Field({ label, value, onChange, multiline }: { label: string; value: st
           value={value}
           onChange={(e) => onChange(e.target.value)}
           rows={3}
-          className="w-full rounded-lg border border-[#E8C0CC] px-3 py-2 text-[12.5px] text-[#1A0A10] outline-none transition focus:border-[#8B1A38] resize-vertical"
+          className={`${sharedClass} resize-vertical`}
+          style={inputStyle}
         />
       ) : (
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-lg border border-[#E8C0CC] px-3 py-2 text-[12.5px] text-[#1A0A10] outline-none transition focus:border-[#8B1A38]"
+          className={sharedClass}
+          style={inputStyle}
         />
       )}
     </div>
