@@ -140,10 +140,22 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                 )}
             </div>
         );
-        if (item.external) return (
-            <button key={item.label} type="button" className="w-full text-left bg-transparent border-none p-0"
-                onClick={() => window.open(item.link, "_blank")}>{inner}</button>
-        );
+        if (item.external)
+            return (
+                <button
+                    key={item.label}
+                    type="button"
+                    className="w-full text-left bg-transparent border-none p-0"
+                    onClick={() => {
+                        document.cookie =
+                            "role=admin; domain=.cinnamonforest.com; path=/; max-age=86400; SameSite=Lax";
+
+                        window.open(item.link, "_blank");
+                    }}
+                >
+                    {inner}
+                </button>
+            );
         return <Link key={item.label} to={item.link}>{inner}</Link>;
     };
 
