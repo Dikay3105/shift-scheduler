@@ -10,11 +10,11 @@ type ThemeCtx = {
 
 const Ctx = createContext<ThemeCtx | null>(null);
 const STORAGE_KEY = "app.theme";
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 function getSystem(): "light" | "dark" {
     if (typeof window === "undefined") return "light";
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    // return "light";
 }
 
 function applyClass(resolved: "light" | "dark") {
@@ -44,7 +44,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     const setMode = useCallback((m: ThemeMode) => {
         setModeState(m);
-        try { localStorage.setItem(STORAGE_KEY, m); } catch { }
+        try {
+            localStorage.setItem(STORAGE_KEY, m);
+            document.cookie = `app.theme=${m}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
+        } catch { }
     }, []);
 
     return <Ctx.Provider value={{ mode, resolved, setMode }}>{children}</Ctx.Provider>;

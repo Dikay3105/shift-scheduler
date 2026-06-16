@@ -39,6 +39,7 @@ import {
   FileText,
   ImageDown,
   Copy,
+  ShieldCheck,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,6 +56,15 @@ import AdminHeader from "@/components/AdminHeader";
 export const Route = createFileRoute("/schedule")({
   component: SchedulePage,
 });
+
+// Keywords để nhận diện quản lý — chỉnh theo dữ liệu thực tế của bạn
+const MANAGER_KEYWORDS = ["manager", "admin", "quản lý", "trưởng phòng", "giám đốc", "supervisor"];
+
+function isManager(role?: string) {
+  if (!role) return false;
+  const lower = role.toLowerCase();
+  return MANAGER_KEYWORDS.some((k) => lower.includes(k));
+}
 
 function SchedulePage() {
   const {
@@ -78,6 +88,9 @@ function SchedulePage() {
   }, []);
 
   const [weekOffset, setWeekOffset] = useState(0);
+
+  // ── VIEW MODE: "employee" | "manager" ──────────────────────────
+  const [viewMode, setViewMode] = useState<"employee" | "manager">("employee");
 
   const weekStart = useMemo(
     () => addDays(startOfISOWeek(today), weekOffset * 7),
@@ -111,8 +124,6 @@ function SchedulePage() {
       setCopyError("Tuần nguồn trùng với tuần hiện tại");
       return;
     }
-    // Tính ngày bắt đầu của tuần nguồn trong cùng năm với tuần đang xem
-    // Dùng ISO week: ngày 4/1 luôn thuộc tuần 1
     const jan4 = new Date(year, 0, 4);
     const jan4WeekStart = startOfISOWeek(jan4);
     const sourceWeekStart = addDays(jan4WeekStart, (wn - 1) * 7);
@@ -149,11 +160,20 @@ function SchedulePage() {
       return { ...s, bg: p.bg, fg: p.fg };
     });
   }, [state.shifts]);
+
   const shiftById = useMemo(() => {
     const m = new Map<string, (typeof coloredShifts)[number]>();
     coloredShifts.forEach((s) => m.set(s.id, s));
     return m;
   }, [coloredShifts]);
+
+  // ── Lọc nhân viên theo viewMode ───────────────────────────────
+  const displayEmployees = useMemo(() => {
+    if (viewMode === "manager") {
+      return state.employees.filter((e) => isManager(e.role));
+    }
+    return state.employees.filter((e) => !isManager(e.role));
+  }, [state.employees, viewMode]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,7 +213,7 @@ function SchedulePage() {
     try {
       const XLSX = await import("xlsx");
       const header = ["Nhân viên", "Chức vụ", ...days.map((d, i) => `${DAY_NAMES[i]} ${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`)];
-      const rows = state.employees.map((emp) => {
+      const rows = displayEmployees.map((emp) => {
         const cells = dayKeys.map((dk) => {
           const sid = state.assignments[`${emp.id}|${dk}`];
           const sh = sid ? shiftById.get(sid) : null;
@@ -231,7 +251,7 @@ function SchedulePage() {
       </th>`;
     }).join("");
 
-    const bodyRows = state.employees.map((emp, idx) => {
+    const bodyRows = displayEmployees.map((emp, idx) => {
       const bg = idx % 2 === 0 ? "#ffffff" : "#f8fafc";
       const dataCells = dayKeys.map((dk, i) => {
         const isWeekend = i >= 5;
@@ -259,7 +279,6 @@ function SchedulePage() {
                          padding:8px;text-align:center;background:${cellBg};">${inner}</td>`;
       }).join("");
 
-      // Avatar với inline style hoàn toàn
       const avatarLetter = emp.name.charAt(0).toUpperCase();
       const empCell = `
       <td style="border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;
@@ -292,7 +311,7 @@ function SchedulePage() {
                        min-width:180px;border-right:1px solid rgba(255,255,255,0.1);
                        border-bottom:2px solid #334155;font-size:11px;
                        text-transform:uppercase;letter-spacing:1px;">
-              Nhân viên
+              ${viewMode === "manager" ? "Quản lý" : "Nhân viên"}
             </th>
             ${headerCells}
           </tr>
@@ -302,7 +321,6 @@ function SchedulePage() {
     </div>`;
   };
 
-  // Render the table at a fixed desktop width so mobile capture isn't squashed.
   const captureTableCanvas = async () => {
     const { default: html2canvas } = await import("html2canvas-pro");
 
@@ -425,6 +443,7 @@ function SchedulePage() {
           <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
           <div className="absolute -bottom-20 -left-10 h-64 w-64 rounded-full bg-fuchsia-300/20 blur-3xl" />
           <div className="relative flex flex-wrap items-end justify-between gap-4">
+            {/* LEFT: title + week badge */}
             <div>
               <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-[11px] font-medium backdrop-blur">
                 <CalendarDays className="h-3.5 w-3.5" />
@@ -434,40 +453,76 @@ function SchedulePage() {
               <p className="mt-1 text-sm text-white/80">{subtitle} · Nhấn vào ô để chỉnh sửa</p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <form onSubmit={handleSearch} className="flex items-start gap-2">
-                <div className="flex flex-col">
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
-                    <Input
-                      value={searchInput}
-                      onChange={(e) => {
-                        setSearchInput(e.target.value);
-                        if (searchError) setSearchError(null);
-                      }}
-                      placeholder="DD/MM hoặc DD/MM/YYYY"
-                      className="h-9 w-[210px] border-white/30 bg-white/15 pl-8 text-sm text-white placeholder:text-white/60 focus-visible:ring-white/50"
-                    />
-                  </div>
-                  {searchError && (
-                    <span className="mt-1 text-[11px] text-amber-200">{searchError}</span>
-                  )}
+            {/* RIGHT: view mode toggle + nav + search */}
+            <div className="flex flex-col items-end gap-3">
+              {/* VIEW MODE TOGGLE */}
+              <div className="flex flex-col items-end gap-1">
+                <div className="flex items-center gap-1 rounded-full border border-white/20 bg-white/10 p-1 backdrop-blur">
+                  <button
+                    onClick={() => setViewMode("employee")}
+                    className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-all duration-200 ${viewMode === "employee"
+                        ? "bg-white text-indigo-700 shadow"
+                        : "text-white/80 hover:text-white"
+                      }`}
+                  >
+                    <Users className="h-3.5 w-3.5" />
+                    Nhân viên
+                  </button>
+                  <button
+                    onClick={() => setViewMode("manager")}
+                    className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-all duration-200 ${viewMode === "manager"
+                        ? "bg-white text-indigo-700 shadow"
+                        : "text-white/80 hover:text-white"
+                      }`}
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    Quản lý
+                  </button>
                 </div>
-                <Button type="submit" size="sm" className="h-9 bg-white text-indigo-700 hover:bg-white/90">
-                  Tìm tuần
-                </Button>
-              </form>
+                <span className="text-[11px] text-white/60">
+                  Đang xem:{" "}
+                  <span className="font-semibold text-white/90">
+                    {viewMode === "employee" ? "Nhân viên" : "Quản lý"}
+                  </span>
+                </span>
+              </div>
 
-              <div className="flex items-center gap-1 rounded-full border border-white/30 bg-white/10 p-1 backdrop-blur">
-                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-white hover:bg-white/20 hover:text-white" onClick={() => setWeekOffset((o) => o - 1)}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <button onClick={() => setWeekOffset(0)} className="px-2 text-xs font-semibold text-white hover:text-white/80">
-                  Tuần này
-                </button>
-                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-white hover:bg-white/20 hover:text-white" onClick={() => setWeekOffset((o) => o + 1)}>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+              {/* SEARCH + WEEK NAV */}
+              <div className="flex flex-wrap items-center gap-2">
+                <form onSubmit={handleSearch} className="flex items-start gap-2">
+                  <div className="flex flex-col">
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
+                      <Input
+                        value={searchInput}
+                        onChange={(e) => {
+                          setSearchInput(e.target.value);
+                          if (searchError) setSearchError(null);
+                        }}
+                        placeholder="DD/MM hoặc DD/MM/YYYY"
+                        className="h-9 w-[210px] border-white/30 bg-white/15 pl-8 text-sm text-white placeholder:text-white/60 focus-visible:ring-white/50"
+                      />
+                    </div>
+                    {searchError && (
+                      <span className="mt-1 text-[11px] text-amber-200">{searchError}</span>
+                    )}
+                  </div>
+                  <Button type="submit" size="sm" className="h-9 bg-white text-indigo-700 hover:bg-white/90">
+                    Tìm tuần
+                  </Button>
+                </form>
+
+                <div className="flex items-center gap-1 rounded-full border border-white/30 bg-white/10 p-1 backdrop-blur">
+                  <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-white hover:bg-white/20 hover:text-white" onClick={() => setWeekOffset((o) => o - 1)}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <button onClick={() => setWeekOffset(0)} className="px-2 text-xs font-semibold text-white hover:text-white/80">
+                    Tuần này
+                  </button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-white hover:bg-white/20 hover:text-white" onClick={() => setWeekOffset((o) => o + 1)}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -507,7 +562,7 @@ function SchedulePage() {
               <thead>
                 <tr>
                   <th className="min-w-[200px] border-r border-white/10 bg-gradient-to-br from-slate-900 to-slate-800 p-4 pl-5 text-center text-xs font-semibold uppercase tracking-wider text-white/90">
-                    Nhân viên
+                    {viewMode === "manager" ? "Quản lý" : "Nhân viên"}
                   </th>
                   {days.map((d, i) => {
                     const isWeekend = i >= 5;
@@ -516,8 +571,8 @@ function SchedulePage() {
                       <th
                         key={i}
                         className={`border-r border-white/10 p-3 text-center text-xs font-semibold last:border-r-0 ${isWeekend
-                          ? "bg-gradient-to-br from-amber-600 to-orange-700 text-white"
-                          : "bg-gradient-to-br from-slate-900 to-slate-800 text-white/90"
+                            ? "bg-gradient-to-br from-amber-600 to-orange-700 text-white"
+                            : "bg-gradient-to-br from-slate-900 to-slate-800 text-white/90"
                           } ${isToday ? "ring-2 ring-inset ring-yellow-300" : ""}`}
                       >
                         <div className="text-[12px] font-bold uppercase tracking-wider">{DAY_NAMES[i]}</div>
@@ -532,7 +587,7 @@ function SchedulePage() {
               </thead>
 
               <tbody>
-                {state.employees.map((emp, idx) => (
+                {displayEmployees.map((emp, idx) => (
                   <tr
                     key={emp.id}
                     className={`border-b border-border/50 last:border-b-0 transition-colors hover:bg-indigo-50/40 ${idx % 2 === 0 ? "bg-background" : "bg-muted/20"
@@ -597,10 +652,12 @@ function SchedulePage() {
                   </tr>
                 ))}
 
-                {state.employees.length === 0 && (
+                {displayEmployees.length === 0 && (
                   <tr>
                     <td colSpan={8} className="py-12 text-center text-sm text-muted-foreground">
-                      Chưa có nhân viên. Bấm "Nhân viên" để thêm.
+                      {viewMode === "manager"
+                        ? `Chưa có quản lý. Thêm nhân viên với role chứa "quản lý" hoặc "manager".`
+                        : `Chưa có nhân viên. Bấm "Nhân viên" để thêm.`}
                     </td>
                   </tr>
                 )}
