@@ -99,7 +99,7 @@
 
 .dark {
   /* Softer dark — slate, not pitch-black */
-  --background: oklch(0.255 0.018 265);
+  --background: oklch(0% 0 0);
   --foreground: oklch(0.96 0.005 240);
   --surface: oklch(0.305 0.020 265);
   --card: oklch(0.305 0.020 265);
