@@ -793,7 +793,6 @@ export function AiPostsPage() {
 // ─── CSS ──────────────────────────────────────────────────────────────────────
 
 const CSS = `
-/* THAY BẰNG */
 :root { 
   --b: oklch(0.82 0.025 18);        /* light mode border — solid, no alpha */
   --bg: oklch(0.885 0.024 18);      /* light mode background */

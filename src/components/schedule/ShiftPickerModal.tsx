@@ -12,6 +12,7 @@ import { Check } from "lucide-react";
 
 import type { Shift, ShiftGroup } from "@/lib/schedule-types";
 import { getShiftColor } from "@/lib/shift-colors";
+import { useIsDark } from "@/hooks/use-is-dark";
 
 import { scheduleApi } from "@/services/api";
 
@@ -21,10 +22,13 @@ const GROUP_LABELS: Record<ShiftGroup, string> = {
   toi: "Tối",
 };
 
+// Header nhóm dùng class Tailwind với biến thể dark riêng,
+// thay vì màu pastel cố định trước đây (bg-blue-100 text-blue-700 ...)
+// vốn không đọc được khi nền Dialog chuyển tối.
 const GROUP_STYLE: Record<ShiftGroup, string> = {
-  sang: "bg-blue-100 text-blue-700",
-  chieu: "bg-yellow-100 text-yellow-800",
-  toi: "bg-purple-100 text-purple-700",
+  sang: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-200",
+  chieu: "bg-yellow-100 text-yellow-800 dark:bg-amber-950 dark:text-amber-200",
+  toi: "bg-purple-100 text-purple-700 dark:bg-violet-950 dark:text-violet-200",
 };
 
 // Lấy group từ session DB thay vì tính từ giờ
@@ -54,6 +58,8 @@ export function ShiftPickerModal({
   dateLabel,
   onSelect,
 }: Props) {
+  const isDark = useIsDark();
+
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -64,6 +70,13 @@ export function ShiftPickerModal({
       loadShifts();
     }
   }, [open]);
+
+  // Khi đổi theme trong lúc modal đang mở, tính lại màu cho từng ca
+  // vì getShiftColor() trả về cặp màu khác nhau theo theme.
+  useEffect(() => {
+    setShifts((prev) => prev.map((s, i) => ({ ...s, ...getShiftColor(i) })));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDark]);
 
   const loadShifts = async () => {
     try {
@@ -170,7 +183,7 @@ export function ShiftPickerModal({
                             relative rounded-2xl border-2 px-3 py-3 text-center
                             transition-all duration-200
                             ${selected
-                              ? "scale-[1.05] shadow-xl ring-2 ring-offset-4"
+                              ? "scale-[1.05] shadow-xl ring-2 ring-offset-4 ring-offset-background"
                               : "border-transparent hover:scale-[1.03] hover:shadow-md"
                             }
                           `}
@@ -178,11 +191,11 @@ export function ShiftPickerModal({
                             background: s.bg,
                             color: s.fg,
                             borderColor: selected ? s.fg : "transparent",
-                            boxShadow: selected ? `0 12px 28px ${s.bg}` : undefined,
+                            boxShadow: selected ? `0 12px 28px ${s.bg}66` : undefined,
                           }}
                         >
                           {selected && (
-                            <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-md">
+                            <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-background shadow-md ring-1 ring-border">
                               <Check className="w-4 h-4" style={{ color: s.fg }} />
                             </span>
                           )}
@@ -197,8 +210,11 @@ export function ShiftPickerModal({
 
                           {selected && (
                             <div
-                              className="mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-white/80"
-                              style={{ color: s.fg }}
+                              className="mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+                              style={{
+                                background: isDark ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.8)",
+                                color: s.fg,
+                              }}
                             >
                               Đã chọn
                             </div>

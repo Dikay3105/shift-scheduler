@@ -19,6 +19,7 @@ import {
 import { Trash2, Plus, Loader2 } from "lucide-react";
 import type { Shift, ShiftGroup } from "@/lib/schedule-types";
 import { getShiftColor } from "@/lib/shift-colors";
+import { useIsDark } from "@/hooks/use-is-dark";
 import { scheduleApi } from "@/services/api";
 
 // Session từ DB: morning | afternoon | night
@@ -49,29 +50,18 @@ const SESSION_LABELS: Record<ShiftSession, string> = {
   night: "Tối",
 };
 
-const GROUP_PRESETS: Record<ShiftGroup, { bg: string; fg: string }> = {
-  sang: { bg: "#dbeafe", fg: "#1e40af" },
-  chieu: { bg: "#fef3c7", fg: "#854d0e" },
-  toi: { bg: "#ede9fe", fg: "#4c1d95" },
+// Preset cho header nhóm (Sáng/Chiều/Tối) — có biến thể light/dark riêng
+// vì đây là class Tailwind cố định, không đi qua getShiftColor.
+const GROUP_PRESET_CLASS: Record<ShiftGroup, string> = {
+  sang: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200",
+  chieu: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200",
+  toi: "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200",
 };
 
-const EXTRA_COLORS = [
-  { bg: "#bfdbfe", fg: "#1e3a8a" },
-  { bg: "#bae6fd", fg: "#0e7490" },
-  { bg: "#a5f3fc", fg: "#164e63" },
-  { bg: "#fde68c", fg: "#78350f" },
-  { bg: "#fcd34d", fg: "#713f12" },
-  { bg: "#fed7aa", fg: "#9a3412" },
-  { bg: "#d1fae5", fg: "#14532d" },
-  { bg: "#ddd6fe", fg: "#4338ca" },
-  { bg: "#c4b5fd", fg: "#3730a3" },
-  { bg: "#fce7f3", fg: "#831843" },
-];
-
-// Extend Shift để mang thêm session từ DB
-interface ShiftWithSession extends Shift {
-  session: ShiftSession;
-}
+// Giá trị khởi tạo cho draft khi chọn "Sáng" — vẫn cần 1 cặp {bg, fg} cụ thể
+// để hiển thị preview mã ca trước khi bấm "Thêm ca". Lấy theo getShiftColor(0)
+// (đã tự chọn light/dark) thay vì hard-code pastel sáng như trước.
+const sangPreview = () => getShiftColor(0);
 
 export function ShiftManagerModal({
   open,
@@ -86,17 +76,18 @@ export function ShiftManagerModal({
   onUpdate: (id: string, patch: Partial<Shift> & { session?: ShiftSession }) => void;
   onDelete: (id: string) => void;
 }) {
-  const [shifts, setShifts] = useState<ShiftWithSession[]>([]);
-  const [draft, setDraft] = useState<Omit<ShiftWithSession, "id">>({
+  const isDark = useIsDark();
+
+  const [shifts, setShifts] = useState<(Shift & { session: ShiftSession })[]>([]);
+  const [draft, setDraft] = useState<Omit<Shift, "id"> & { session: ShiftSession }>(() => ({
     code: "",
     label: "",
     start: "08:00",
     end: "12:00",
     group: "sang",
     session: "morning",
-    bg: GROUP_PRESETS.sang.bg,
-    fg: GROUP_PRESETS.sang.fg,
-  });
+    ...sangPreview(),
+  }));
 
   const [isLoading, setIsLoading] = useState(false);
   const [colorIndex, setColorIndex] = useState(0);
@@ -118,13 +109,23 @@ export function ShiftManagerModal({
     setDraft((prev) => ({ ...prev, code: `Ca${maxNum + 1}` }));
   }, [shifts]);
 
+  // Khi đổi theme (sáng/tối) thì màu của các ca đã tải cần được tính lại,
+  // vì getShiftColor() trả về cặp màu khác nhau theo theme.
+  useEffect(() => {
+    setShifts((prev) =>
+      prev.map((s, i) => ({ ...s, ...getShiftColor(i) }))
+    );
+    setDraft((prev) => ({ ...prev, ...getShiftColor(colorIndex) }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDark]);
+
   const loadShifts = async () => {
     try {
       // setIsLoading(true);
       const response = await scheduleApi.getShifts();
       const shiftsApi = response.data || [];
 
-      const formattedShifts: ShiftWithSession[] = shiftsApi.map((s: any, index: number) => {
+      const formattedShifts = shiftsApi.map((s: any, index: number) => {
         // Lấy session trực tiếp từ DB (morning | afternoon | night)
         const session: ShiftSession = s.session ?? "morning";
         const group: ShiftGroup = SESSION_TO_GROUP[session];
@@ -154,7 +155,7 @@ export function ShiftManagerModal({
   // Cập nhật local state ngay lập tức để UI phản hồi nhanh
   const handleUpdateField = (
     id: string,
-    patch: Partial<ShiftWithSession>
+    patch: Partial<Shift & { session: ShiftSession }>
   ) => {
     // Nếu đổi session thì đồng bộ group
     if (patch.session) {
@@ -183,7 +184,7 @@ export function ShiftManagerModal({
       return;
     }
 
-    const extra = EXTRA_COLORS[colorIndex % EXTRA_COLORS.length];
+    const extra = getShiftColor(colorIndex);
 
     await onAdd({
       code: draft.code.trim().toUpperCase(),
@@ -207,8 +208,7 @@ export function ShiftManagerModal({
       end: "12:00",
       group: "sang",
       session: "morning",
-      bg: GROUP_PRESETS.sang.bg,
-      fg: GROUP_PRESETS.sang.fg,
+      ...sangPreview(),
     }));
   };
 
@@ -231,11 +231,7 @@ export function ShiftManagerModal({
               return (
                 <div key={g}>
                   <div
-                    className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded inline-block mb-3"
-                    style={{
-                      background: GROUP_PRESETS[g].bg,
-                      color: GROUP_PRESETS[g].fg,
-                    }}
+                    className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded inline-block mb-3 ${GROUP_PRESET_CLASS[g]}`}
                   >
                     {GROUP_LABELS[g]}
                   </div>
@@ -244,9 +240,8 @@ export function ShiftManagerModal({
                     {list.map((s) => (
                       <div
                         key={s.id}
-                        className="grid grid-cols-12 gap-3 items-center p-4 rounded-xl border-2 transition-shadow hover:shadow-md"
+                        className="grid grid-cols-12 gap-3 items-center p-4 rounded-xl border-2 transition-shadow hover:shadow-md bg-card"
                         style={{
-                          background: `${s.bg}55`,
                           borderColor: s.bg,
                         }}
                       >
@@ -270,7 +265,7 @@ export function ShiftManagerModal({
                             onChange={(e) =>
                               handleUpdateField(s.id, { start: e.target.value })
                             }
-                            className="bg-white/80"
+                            className="bg-background"
                           />
                         </div>
 
@@ -285,7 +280,7 @@ export function ShiftManagerModal({
                             onChange={(e) =>
                               handleUpdateField(s.id, { end: e.target.value })
                             }
-                            className="bg-white/80"
+                            className="bg-background"
                           />
                         </div>
 
@@ -300,7 +295,7 @@ export function ShiftManagerModal({
                               handleUpdateField(s.id, { session: v })
                             }
                           >
-                            <SelectTrigger className="bg-white/80">
+                            <SelectTrigger className="bg-background">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -402,7 +397,6 @@ export function ShiftManagerModal({
                     ...draft,
                     session: v,
                     group: SESSION_TO_GROUP[v],
-                    ...GROUP_PRESETS[SESSION_TO_GROUP[v]],
                   })
                 }
               >
