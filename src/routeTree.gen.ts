@@ -15,6 +15,7 @@ import { Route as EmployeeCardRouteImport } from './routes/employeeCard'
 import { Route as AvatarRouteImport } from './routes/avatar'
 import { Route as AiPostsRouteImport } from './routes/aiPosts'
 import { Route as AiContentRouteImport } from './routes/aiContent'
+import { Route as TaskReportRouteImport } from './routes/TaskReport'
 import { Route as IndexRouteImport } from './routes/index'
 
 const ScheduleRoute = ScheduleRouteImport.update({
@@ -47,6 +48,11 @@ const AiContentRoute = AiContentRouteImport.update({
   path: '/aiContent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TaskReportRoute = TaskReportRouteImport.update({
+  id: '/TaskReport',
+  path: '/TaskReport',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -55,6 +61,7 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/TaskReport': typeof TaskReportRoute
   '/aiContent': typeof AiContentRoute
   '/aiPosts': typeof AiPostsRoute
   '/avatar': typeof AvatarRoute
@@ -64,6 +71,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/TaskReport': typeof TaskReportRoute
   '/aiContent': typeof AiContentRoute
   '/aiPosts': typeof AiPostsRoute
   '/avatar': typeof AvatarRoute
@@ -74,6 +82,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/TaskReport': typeof TaskReportRoute
   '/aiContent': typeof AiContentRoute
   '/aiPosts': typeof AiPostsRoute
   '/avatar': typeof AvatarRoute
@@ -85,6 +94,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/TaskReport'
     | '/aiContent'
     | '/aiPosts'
     | '/avatar'
@@ -94,6 +104,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/TaskReport'
     | '/aiContent'
     | '/aiPosts'
     | '/avatar'
@@ -103,6 +114,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/TaskReport'
     | '/aiContent'
     | '/aiPosts'
     | '/avatar'
@@ -113,6 +125,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  TaskReportRoute: typeof TaskReportRoute
   AiContentRoute: typeof AiContentRoute
   AiPostsRoute: typeof AiPostsRoute
   AvatarRoute: typeof AvatarRoute
@@ -165,6 +178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AiContentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/TaskReport': {
+      id: '/TaskReport'
+      path: '/TaskReport'
+      fullPath: '/TaskReport'
+      preLoaderRoute: typeof TaskReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -177,6 +197,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  TaskReportRoute: TaskReportRoute,
   AiContentRoute: AiContentRoute,
   AiPostsRoute: AiPostsRoute,
   AvatarRoute: AvatarRoute,

@@ -257,6 +257,14 @@ function DashboardContent() {
                 </div>
                 <TrafficChart />
             </div>
+
+            <div className="bg-white rounded-xl overflow-hidden h-[900px]">
+                <iframe
+                    src="https://dikay3105.github.io/Catalogue/"
+                    className="w-full h-full border-0"
+                    title="Catalogue"
+                />
+            </div>
         </div>
     );
 }
