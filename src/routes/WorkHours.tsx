@@ -187,6 +187,48 @@ function WorkHoursPage() {
                 </div>
             </div>
 
+            {/* Bulk apply */}
+            <div className="bg-card border border-border rounded-2xl p-4 md:p-5 mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                    <Wand2 size={15} className="text-[#8B1A38]" />
+                    <h2 className="text-sm font-semibold">Áp dụng hàng loạt</h2>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                    <div>
+                        <label className="text-[11px] text-muted-foreground mb-1 block">Giờ làm</label>
+                        <input type="time" value={bulkStart} onChange={e => setBulkStart(e.target.value)}
+                            className="w-full px-2 py-2 rounded-lg bg-background border border-border text-sm" />
+                    </div>
+                    <div>
+                        <label className="text-[11px] text-muted-foreground mb-1 block">Giờ về</label>
+                        <input type="time" value={bulkEnd} onChange={e => setBulkEnd(e.target.value)}
+                            className="w-full px-2 py-2 rounded-lg bg-background border border-border text-sm" />
+                    </div>
+                    <div className="col-span-2">
+                        <label className="text-[11px] text-muted-foreground mb-1 block">Áp dụng cho</label>
+                        <select value={bulkScope} onChange={e => setBulkScope(e.target.value as any)}
+                            className="w-full px-2 py-2 rounded-lg bg-background border border-border text-sm">
+                            <option value="all">Tất cả các ngày</option>
+                            <option value="empty">Chỉ các ngày còn trống</option>
+                            <option value="weekday">Thứ 2 – Thứ 6</option>
+                            <option value="weekend">Cuối tuần (T7 + CN)</option>
+                            <option value="sunday">Chỉ Chủ nhật</option>
+                        </select>
+                    </div>
+                    <button onClick={applyBulk}
+                        className="px-3 py-2 rounded-lg bg-[#8B1A38] text-white text-sm font-semibold hover:opacity-90 flex items-center justify-center gap-1.5">
+                        <Wand2 size={14} /> Áp dụng
+                    </button>
+                    <button onClick={copyFromFirst} title="Copy giờ từ ngày đầu tiên có dữ liệu sang tất cả"
+                        className="px-3 py-2 rounded-lg border border-border bg-background text-sm font-medium hover:bg-muted flex items-center justify-center gap-1.5">
+                        <Copy size={14} /> Copy tất cả
+                    </button>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-2">
+                    Mẹo: chọn "Chỉ các ngày còn trống" để giữ nguyên các ô đã chỉnh tay.
+                </p>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Input table */}
                 <div className="bg-card border border-border rounded-2xl overflow-hidden">
@@ -202,6 +244,7 @@ function WorkHoursPage() {
                                     <th className="text-left px-3 py-2">Giờ làm</th>
                                     <th className="text-left px-3 py-2">Giờ về</th>
                                     <th className="text-right px-3 py-2">Tổng</th>
+                                    <th className="px-2 py-2"></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -219,8 +262,14 @@ function WorkHoursPage() {
                                                 onChange={e => updateEntry(r.day, "end", e.target.value)}
                                                 className="w-full px-2 py-1 rounded bg-background border border-border text-xs" />
                                         </td>
-                                        <td className="px-3 py-1.5 text-right text-xs font-semibold text-[#8B1A38]">
+                                        <td className="px-3 py-1.5 text-right text-xs font-semibold text-[#8B1A38] whitespace-nowrap">
                                             {r.hours > 0 ? formatHours(r.hours) : "—"}
+                                        </td>
+                                        <td className="px-2 py-1">
+                                            <button onClick={() => clearDay(r.day)} title="Xóa ngày này"
+                                                className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground hover:text-[#8B1A38] hover:bg-muted border-none bg-transparent cursor-pointer">
+                                                <X size={13} />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
