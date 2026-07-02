@@ -4,7 +4,7 @@ import {
     CalendarDays, UserCog, Image, Package2, ShieldCheck,
     Sparkles, LayoutDashboard, Settings, ChevronRight,
     Bell, Search, Sun, Moon, Monitor, Check,
-    PanelLeftOpen, PanelLeftClose, Menu, X, CheckCircle, CircleDollarSign
+    PanelLeftOpen, PanelLeftClose, Menu, X, CheckCircle, CircleDollarSign, Timer
 } from "lucide-react";
 import { useTheme, type ThemeMode } from "@/hooks/use-theme";
 
@@ -16,6 +16,7 @@ const SIDEBAR_ITEMS = [
     { label: "Thẻ nhân viên", icon: UserCog, link: "/employeeCard" },
     { label: "Avatar", icon: Image, link: "/avatar" },
     { label: "Content AI", icon: Sparkles, link: "/aiPosts", badge: "AI" },
+    { label: "Bảng giờ làm", icon: Timer, link: "/WorkHours" },
     { label: "Báo cáo công việc", icon: CheckCircle, link: "/TaskReport" },
     { label: "Báo cáo doanh thu", icon: CircleDollarSign, link: "/SaleReport" },
 ];
