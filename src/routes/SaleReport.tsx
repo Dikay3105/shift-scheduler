@@ -299,7 +299,7 @@ export default function SaleReport() {
         const prevMap: Record<string, { name: string; cat: string; qty: number }> = {};
         productList.forEach((p) => (curMap[p.code] = { name: p.name, cat: p.cat, qty: p.qty }));
         Object.entries(cmpData.productStats).forEach(([pid, s]) => {
-            const p = cmpData.productMap?.[pid] || { Code: pid, Name: '(không rõ tên)', Cat: 'Chưa phân nhóm' };
+            const p = cmpData.productMap?.[Number(pid)] || { Code: pid, Name: '(không rõ tên)', Cat: 'Chưa phân nhóm' };
             prevMap[p.Code] = { name: p.Name, cat: p.Cat || '', qty: s.qty };
         });
         const codes = new Set([...Object.keys(curMap), ...Object.keys(prevMap)]);
