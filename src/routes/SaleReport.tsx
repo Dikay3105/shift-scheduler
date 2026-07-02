@@ -287,7 +287,7 @@ export default function SaleReport() {
 
     function updateStock(code: string, val: string) {
         setStock((prev) => {
-            const next = { ...prev, [code]: val === '' ? '' : (parseFloat(val) || 0) };
+            const next: Record<string, number | ''> = { ...prev, [code]: val === '' ? '' : (parseFloat(val) || 0) };
             saveStock(next);
             return next;
         });
