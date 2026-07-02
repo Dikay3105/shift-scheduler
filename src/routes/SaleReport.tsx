@@ -214,7 +214,7 @@ export default function SaleReport() {
     const productList = useMemo(() => {
         if (!data?.productStats) return [];
         return Object.entries(data.productStats).map(([pid, s]) => {
-            const p = data.productMap?.[pid] || { Code: pid, Name: '(không rõ tên)', Cat: 'Chưa phân nhóm' };
+            const p = data.productMap?.[Number(pid)] || { Code: pid, Name: '(không rõ tên)', Cat: 'Chưa phân nhóm' };
             return { pid: Number(pid), code: p.Code, name: p.Name, unit: p.Unit || '', cat: p.Cat || 'Chưa phân nhóm', qty: s.qty, rev: s.revenue };
         });
     }, [data]);
@@ -287,7 +287,7 @@ export default function SaleReport() {
 
     function updateStock(code: string, val: string) {
         setStock((prev) => {
-            const next = { ...prev, [code]: val === '' ? '' : (parseFloat(val) || 0) };
+            const next: Record<string, number | ''> = { ...prev, [code]: val === '' ? '' : (parseFloat(val) || 0) };
             saveStock(next);
             return next;
         });
@@ -299,7 +299,7 @@ export default function SaleReport() {
         const prevMap: Record<string, { name: string; cat: string; qty: number }> = {};
         productList.forEach((p) => (curMap[p.code] = { name: p.name, cat: p.cat, qty: p.qty }));
         Object.entries(cmpData.productStats).forEach(([pid, s]) => {
-            const p = cmpData.productMap?.[pid] || { Code: pid, Name: '(không rõ tên)', Cat: 'Chưa phân nhóm' };
+            const p = cmpData.productMap?.[Number(pid)] || { Code: pid, Name: '(không rõ tên)', Cat: 'Chưa phân nhóm' };
             prevMap[p.Code] = { name: p.Name, cat: p.Cat || '', qty: s.qty };
         });
         const codes = new Set([...Object.keys(curMap), ...Object.keys(prevMap)]);

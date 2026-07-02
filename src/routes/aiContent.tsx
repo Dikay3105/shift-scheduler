@@ -223,7 +223,7 @@ function AiContentPage() {
                 const scheduleAt = post.scheduledAt
                     ? new Date(new Date(post.scheduledAt).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)
                     : "";
-                setDrafts([{ id: editId, products: post.products ?? [], content: post.content, tone: post.tone, platform: post.platform ?? "", scheduleAt, images: [], saved: false }]);
+                setDrafts([{ id: editId, products: (post.products ?? []) as any, content: post.content, tone: post.tone, platform: post.platform ?? "", scheduleAt, images: [], saved: false }]);
             } catch { }
         })();
     }, [editId]);

@@ -209,7 +209,6 @@ function DashboardContent() {
             value: String(scheduledPosts), label: "Bài chờ đăng", icon: Clock, color: "#50C4B0",
             light: "#62D4C0",
         },
-        ,
     ];
 
     return (
