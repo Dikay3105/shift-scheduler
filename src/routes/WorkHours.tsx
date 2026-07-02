@@ -83,9 +83,53 @@ function WorkHoursPage() {
         setEntries(prev => ({ ...prev, [day]: { ...(prev[day] || { start: "", end: "" }), [field]: value } }));
     };
 
+    const clearDay = (day: number) => {
+        setEntries(prev => {
+            const n = { ...prev }; delete n[day]; return n;
+        });
+    };
+
     const clearAll = () => {
         if (!confirm("Xóa toàn bộ dữ liệu tháng này?")) return;
         setEntries({});
+    };
+
+    // Bulk apply
+    type Scope = "all" | "empty" | "weekday" | "weekend" | "sunday";
+    const [bulkStart, setBulkStart] = useState("10:00");
+    const [bulkEnd, setBulkEnd] = useState("18:00");
+    const [bulkScope, setBulkScope] = useState<Scope>("all");
+
+    const applyBulk = () => {
+        const matches = (dow: number, day: number) => {
+            if (bulkScope === "all") return true;
+            if (bulkScope === "empty") return !entries[day]?.start && !entries[day]?.end;
+            if (bulkScope === "weekday") return dow >= 1 && dow <= 5;
+            if (bulkScope === "weekend") return dow === 0 || dow === 6;
+            if (bulkScope === "sunday") return dow === 0;
+            return false;
+        };
+        setEntries(prev => {
+            const next = { ...prev };
+            for (const d of days) {
+                const dow = new Date(year, month - 1, d).getDay();
+                if (matches(dow, d)) next[d] = { start: bulkStart, end: bulkEnd };
+            }
+            return next;
+        });
+    };
+
+    const copyFromFirst = () => {
+        const firstDay = Object.keys(entries).map(Number).sort((a, b) => a - b)
+            .find(d => entries[d]?.start && entries[d]?.end);
+        if (!firstDay) { alert("Chưa có ngày nào có giờ để copy."); return; }
+        const src = entries[firstDay];
+        if (!confirm(`Copy ${src.start}–${src.end} (ngày ${pad(firstDay)}) sang TẤT CẢ các ngày?`)) return;
+        setEntries(() => {
+            const next: Record<number, DayEntry> = {};
+            for (const d of days) next[d] = { ...src };
+            return next;
+        });
     };
 
     const exportPNG = async () => {
