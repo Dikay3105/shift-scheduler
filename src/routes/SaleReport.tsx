@@ -214,7 +214,7 @@ export default function SaleReport() {
     const productList = useMemo(() => {
         if (!data?.productStats) return [];
         return Object.entries(data.productStats).map(([pid, s]) => {
-            const p = data.productMap?.[pid] || { Code: pid, Name: '(không rõ tên)', Cat: 'Chưa phân nhóm' };
+            const p = data.productMap?.[Number(pid)] || { Code: pid, Name: '(không rõ tên)', Cat: 'Chưa phân nhóm' };
             return { pid: Number(pid), code: p.Code, name: p.Name, unit: p.Unit || '', cat: p.Cat || 'Chưa phân nhóm', qty: s.qty, rev: s.revenue };
         });
     }, [data]);
