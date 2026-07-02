@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useRef, useState, useEffect } from "react";
 import html2canvas from "html2canvas-pro";
-import { Download, RotateCcw } from "lucide-react";
+import { Download, RotateCcw, Wand2, Copy, X } from "lucide-react";
 
 export const Route = createFileRoute("/WorkHours")({
     head: () => ({
