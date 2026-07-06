@@ -1076,7 +1076,10 @@ export default function TaskReport() {
             </select>
 
             {/* Add task */}
-            <button onClick={() => setTaskModal({ open: true, task: {} })} style={{
+            <button onClick={() => setTaskModal({
+              open: true,
+              task: { assignee: activeManager?.fullName || "", assigneeId: activeManagerId },
+            })} style={{
               background: "#8B1A38", color: "#fff", border: "none", borderRadius: 8,
               padding: "8px 14px", fontFamily: "inherit", fontWeight: 700, fontSize: ".82rem",
               cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
@@ -1153,7 +1156,10 @@ export default function TaskReport() {
                 {activeManager?.fullName} chưa có công việc tuần này
               </div>
               <div style={{ color: "#90757C", fontSize: ".86rem", marginBottom: 16 }}>Tuần {weekKey}</div>
-              <button onClick={() => setTaskModal({ open: true, task: {} })} style={{
+              <button onClick={() => setTaskModal({
+                open: true,
+                task: { assignee: activeManager?.fullName || "", assigneeId: activeManagerId },
+              })} style={{
                 background: "#8B1A38", color: "#fff", border: "none", borderRadius: 10,
                 padding: "9px 18px", fontFamily: "inherit", fontWeight: 700, fontSize: ".88rem", cursor: "pointer",
               }}>+ Thêm công việc</button>
