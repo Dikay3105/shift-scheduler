@@ -147,6 +147,87 @@ function emptyTask(): Task {
   };
 }
 
+// ─── HTML escape helper (dùng cho báo cáo ảnh) ───────────────────────────────
+function escHtml(s: string) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+// ─── Xây HTML cho "phiếu báo cáo" dùng khi xuất ảnh ──────────────────────────
+// Layout này mô phỏng đúng mẫu Cinnamon Forest: banner nâu đỏ, dải thống kê,
+// bảng công việc nhóm theo loại (Task chính / phụ / phát sinh).
+const RS_LEAF_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21c-4 0-8-3-8-8 0-5 5-10 9-10 0 4 1 5 3 7s3 4 1 7-3 4-6 4z"/><path d="M11 21c0-5 1-8 4-11"/></svg>`;
+
+function buildReportSheetHTML(
+  tasks: Task[],
+  managerName: string,
+  weekKey: string,
+  weekStart: string,
+  weekEnd: string
+) {
+  const total = tasks.length;
+  const done = tasks.filter(t => t.status === "done").length;
+  const doing = tasks.filter(t => t.status === "doing").length;
+  const over = tasks.filter(t => t.deadline && t.status !== "done" && t.deadline < today()).length;
+  const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+  const stamp = fmt(today());
+
+  let rows = "";
+  let idx = 0;
+  TYPE_ORDER.forEach(ty => {
+    const items = tasks.filter(t => (t.type || "chinh") === ty);
+    if (!items.length) return;
+    rows += `<tr class="rs-group"><td colspan="7">${TYPE[ty].label} · ${items.length} việc</td></tr>`;
+    items.forEach(t => {
+      idx++;
+      const ups = [...(t.updates || [])].sort((a, b) => b.date.localeCompare(a.date));
+      const latest = ups[0];
+      const isOver = !!(t.deadline && t.status !== "done" && t.deadline < today());
+      const priority = PRIORITY[t.priority as keyof typeof PRIORITY] ?? PRIORITY.tb;
+      rows += `<tr>
+        <td class="rs-c">${idx}</td>
+        <td><div class="rs-name">${escHtml(t.name)}</div>${latest ? `<div class="rs-note">› ${escHtml(latest.note)} (${fmt(latest.date)})</div>` : ""}</td>
+        <td class="rs-c">${escHtml(t.assignee || "—")}</td>
+        <td class="rs-c">${fmt(t.deadline)}</td>
+        <td class="rs-c">${priority.label}</td>
+        <td class="rs-c ${isOver ? "rs-over" : "rs-st-" + t.status}">${STATUS[t.status].label}${isOver ? " · quá hạn" : ""}</td>
+        <td class="rs-c"><b>${t.progress ?? 0}%</b></td>
+      </tr>`;
+    });
+  });
+  if (!rows) rows = `<tr><td colspan="7" class="rs-empty">Không có công việc nào để báo cáo.</td></tr>`;
+
+  return `<div class="report-sheet">
+    <div class="rs-head">
+      <div class="rs-brand">
+        <div class="rs-leaf">${RS_LEAF_SVG}</div>
+        <div>
+          <div class="rs-title">Báo cáo tiến độ công việc</div>
+          <div class="rs-sub">${escHtml(managerName)} · CINNAMON FOREST</div>
+        </div>
+      </div>
+      <div class="rs-date">Ngày báo cáo<br><b>${stamp}</b></div>
+    </div>
+    <div class="rs-stats">
+      <div><span>${total}</span>Tổng việc</div>
+      <div><span>${pct}%</span>Hoàn thành</div>
+      <div><span>${doing}</span>Đang làm</div>
+      <div><span>${over}</span>Quá hạn</div>
+    </div>
+    <table class="rs-table">
+      <thead><tr>
+        <th style="width:34px">#</th><th>Công việc</th><th style="width:110px">Người làm</th>
+        <th style="width:90px">Hạn</th><th style="width:78px">Ưu tiên</th><th style="width:120px">Trạng thái</th><th style="width:64px">Tiến độ</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="rs-foot">Cinnamon Forest · Xuất từ công cụ báo cáo tiến độ công việc · Tuần ${weekKey} (${fmt(weekStart)} – ${fmt(weekEnd)})</div>
+  </div>`;
+}
+
 // ─── Pill ─────────────────────────────────────────────────────────────────────
 function Pill({ bg, text, children }: { bg: string; text: string; children: React.ReactNode }) {
   return (
@@ -287,7 +368,7 @@ function TaskCard({ task, onEdit, onDelete, onUpdate }: {
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginRight: 3, verticalAlign: "middle" }}>
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
             </svg>
-            Người giao: <b style={{
+            Người thực hiện: <b style={{
               color: "#3A2228", display: "inline-flex",
               alignItems: "center",
               gap: 4,
@@ -848,24 +929,39 @@ export default function TaskReport() {
 
   useEffect(() => { loadReport(); }, [loadReport]);
 
+  // Xuất ảnh dạng "phiếu báo cáo" giống mẫu Cinnamon Forest, KHÔNG chụp
+  // trực tiếp giao diện đang hiển thị (card, filter, nút bấm...) mà build
+  // một layout bảng ẩn ngoài màn hình rồi mới html2canvas layout đó.
   const handleSaveImage = async () => {
-    if (!captureRef.current || savingImage) return;
+    if (savingImage || currentTasks.length === 0) return;
     setSavingImage(true);
+
+    const mgr = managers.find(m => m._id === activeManagerId);
+    const bounds = getWeekBounds(weekKey);
+
+    const holder = document.createElement("div");
+    holder.style.cssText = "position:fixed;left:-99999px;top:0;width:840px;background:#fff;z-index:-1;";
+    holder.innerHTML = buildReportSheetHTML(
+      currentTasks,
+      mgr?.fullName || "",
+      weekKey,
+      bounds.weekStart,
+      bounds.weekEnd
+    );
+    document.body.appendChild(holder);
+
     try {
-      const canvas = await html2canvas(captureRef.current, {
-        backgroundColor: "#F7F2F4",
+      if (document.fonts && document.fonts.ready) {
+        try { await document.fonts.ready; } catch { /* noop */ }
+      }
+      const target = holder.firstElementChild as HTMLElement;
+      const canvas = await html2canvas(target, {
+        backgroundColor: "#ffffff",
         scale: 2,
         useCORS: true,
         logging: false,
-        onclone: (doc) => {
-          // Ẩn các nút action trong ảnh chụp
-          doc.querySelectorAll(".no-print").forEach((el) => {
-            (el as HTMLElement).style.display = "none";
-          });
-        },
       });
       const link = document.createElement("a");
-      const mgr = managers.find(m => m._id === activeManagerId);
       link.download = `bao-cao-${mgr?.fullName?.replace(/\s+/g, "-") ?? "task"}-${weekKey}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
@@ -873,6 +969,7 @@ export default function TaskReport() {
       console.error("Lỗi lưu ảnh:", err);
       alert("Không thể lưu ảnh. Vui lòng thử lại.");
     } finally {
+      document.body.removeChild(holder);
       setSavingImage(false);
     }
   };
@@ -963,7 +1060,7 @@ export default function TaskReport() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
         * { box-sizing: border-box; }
         body { margin: 0; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #3A2228; -webkit-font-smoothing: antialiased; }
         @keyframes pop { from { transform: translateY(8px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -985,6 +1082,34 @@ export default function TaskReport() {
           .print-only { display: block !important; }
           [style*="position: fixed"] { display: none !important; }
         }
+
+        /* ── Phiếu báo cáo dùng khi xuất ảnh (giống mẫu Cinnamon Forest) ── */
+        .report-sheet{width:840px;background:#fff;color:#3A2228;font-family:'Be Vietnam Pro',sans-serif;overflow:hidden}
+        .rs-head{background:linear-gradient(150deg,#8B1A38,#5E1226);color:#fff;padding:26px 32px;display:flex;justify-content:space-between;align-items:center}
+        .rs-brand{display:flex;align-items:center;gap:14px}
+        .rs-leaf{width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,.16);display:grid;place-items:center}
+        .rs-leaf svg{width:27px;height:27px}
+        .rs-title{font-family:'Lora',serif;font-size:1.5rem;font-weight:600;line-height:1.1}
+        .rs-sub{font-size:.8rem;opacity:.85;letter-spacing:2px;text-transform:uppercase;margin-top:4px}
+        .rs-date{text-align:right;font-size:.8rem;opacity:.9;line-height:1.55}
+        .rs-date b{font-size:1.05rem}
+        .rs-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#F0D8DE}
+        .rs-stats > div{background:#FBF6F2;padding:16px 20px;text-align:center;font-size:.78rem;color:#90757C}
+        .rs-stats span{display:block;font-family:'Lora',serif;font-size:1.75rem;font-weight:600;color:#5E1226;margin-bottom:2px}
+        .rs-table{width:100%;border-collapse:collapse;font-size:.83rem}
+        .rs-table th{background:#FBEFF1;color:#5E1226;text-align:left;padding:11px 14px;font-weight:600;font-size:.74rem;text-transform:uppercase;letter-spacing:.3px}
+        .rs-table td{padding:11px 14px;border-bottom:1px solid #f3e6ea;vertical-align:top}
+        .rs-c{white-space:nowrap}
+        .rs-name{font-weight:600;color:#5E1226}
+        .rs-note{font-size:.76rem;color:#90757C;margin-top:3px}
+        .rs-group td{background:#fbf1f3;font-family:'Lora',serif;font-weight:600;color:#8B1A38;font-size:.86rem;padding:9px 14px;border-bottom:none}
+        .rs-st-done{color:#2E7D5B;font-weight:600}
+        .rs-st-doing{color:#C77B2E;font-weight:600}
+        .rs-st-todo{color:#94959B}
+        .rs-st-hold{color:#6B7280}
+        .rs-over{color:#C0334E;font-weight:600}
+        .rs-empty{text-align:center;color:#90757C;padding:30px}
+        .rs-foot{padding:14px 32px;background:#FBF6F2;font-size:.74rem;color:#90757C;text-align:center;border-top:1px solid #F0D8DE}
       `}</style>
 
       <div style={{ minHeight: "100vh", background: "#F7F2F4" }}>
