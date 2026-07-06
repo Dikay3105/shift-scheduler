@@ -279,11 +279,19 @@ function TaskCard({ task, onEdit, onDelete, onUpdate }: {
       {/* Meta row */}
       <div style={{ display: "flex", gap: "3px 14px", flexWrap: "wrap", marginTop: 8, fontSize: ".78rem", color: "#90757C" }}>
         {task.assignee && (
-          <span>
+          <span style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+          }}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginRight: 3, verticalAlign: "middle" }}>
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
             </svg>
-            Người làm: <b style={{ color: "#3A2228" }}>{task.assignee}</b>
+            Người giao: <b style={{
+              color: "#3A2228", display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+            }}>{task.assignee}</b>
           </span>
         )}
         {task.assignedBy && (
