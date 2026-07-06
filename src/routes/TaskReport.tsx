@@ -261,8 +261,6 @@ function TaskCard({ task, onEdit, onDelete, onUpdate }: {
       <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
         <div style={{
           fontWeight: 600, fontSize: ".93rem", color: "#5E1226", lineHeight: 1.35,
-          textDecoration: task.status === "done" ? "line-through" : "none",
-          textDecorationColor: "#2E7D5B",
         }}>{task.name}</div>
         <div style={{ display: "flex", gap: 4, flex: "none", flexWrap: "wrap", alignItems: "center" }}>
           <Pill bg={TYPE[task.type].bg} text={TYPE[task.type].text}>{TYPE[task.type].label}</Pill>
@@ -725,7 +723,7 @@ function PrintReport({ tasks, managerName, weekKey, weekStart, weekEnd }: {
                     <tr key={t._id || idx} style={{ borderBottom: "1px solid #F5EAED" }}>
                       <td style={{ ...tdStyle, textAlign: "center", color: "#90757C" }}>{idx + 1}</td>
                       <td style={{ ...tdStyle, fontWeight: 600, color: "#5E1226", maxWidth: 180 }}>
-                        <span style={{ textDecoration: t.status === "done" ? "line-through" : "none" }}>{t.name}</span>
+                        <span>{t.name}</span>
                         {t.description && (
                           <div style={{ fontWeight: 400, color: "#90757C", fontSize: ".73rem", marginTop: 2, lineHeight: 1.4 }}>
                             {t.description}
